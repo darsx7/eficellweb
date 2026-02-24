@@ -47,7 +47,10 @@
                 "padding": 2.5,
                 "gap": 2
             },
-            "buttons": { "borderRadius": 12, "hoverScale": 1.05 },
+            "buttons": {
+                "borderRadius": 12,
+                "hoverScale": 1.05
+            },
             "sections": {
                 "heroOpacity": 1,
                 "servicesOpacity": 0.7,
@@ -75,7 +78,10 @@
                 "scrollThreshold": 0.1,
                 "scrollDelayBase": 100
             },
-            "effects": { "glowIntensity": 0.4, "borderOpacity": 0.08 }
+            "effects": {
+                "glowIntensity": 0.4,
+                "borderOpacity": 0.08
+            }
         }
     },
     "hero": {
@@ -106,36 +112,58 @@
                 "icon": "⚡",
                 "title": "Sistemas Fotovoltaicos",
                 "description": "Instalación profesional de sistemas monofásicos y trifásicos adaptados a tu consumo y necesidades energéticas.",
-                "geometry": { "x": 0, "y": 0, "w": 300, "h": "auto", "z": 1 },
+                "geometry": {
+                    "x": 0,
+                    "y": -20,
+                    "w": 320,
+                    "h": "auto",
+                    "z": 1,
+                    "override": true
+                },
                 "effects": []
             },
             {
                 "icon": "🔧",
                 "title": "Mantenimiento",
                 "description": "Servicio preventivo y correctivo para mantener tus paneles funcionando al máximo rendimiento.",
-                "geometry": { "x": 0, "y": 0, "w": 300, "h": "auto", "z": 1 },
+                "geometry": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 300,
+                    "h": "auto",
+                    "z": 1
+                },
                 "effects": []
             },
             {
                 "icon": "📊",
                 "title": "Auditorías Energéticas",
                 "description": "Diagnósticos de consumo y evaluación técnica-económica para optimizar tus recursos energéticos.",
-                "geometry": { "x": 0, "y": 0, "w": 300, "h": "auto", "z": 1 },
+                "geometry": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 300,
+                    "h": "auto",
+                    "z": 1
+                },
                 "effects": []
             },
             {
                 "icon": "🌱",
                 "title": "Consultoría Verde",
                 "description": "Asesoría en integración de renovables, reducción de huella de carbono y certificaciones energéticas.",
-                "geometry": { "x": 0, "y": 0, "w": 300, "h": "auto", "z": 1 },
+                "geometry": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 300,
+                    "h": "auto",
+                    "z": 1
+                },
                 "effects": []
             }
         ],
         "config": {
             "layout": "carousel",
-            "cardEffect": "glow",
-            "hover": "lift",
-            "interaction": "focus",
             "border": "none",
             "background": {
                 "type": "none"
@@ -160,6 +188,30 @@
                     "intensity": 74,
                     "duration": 650,
                     "overflow": true
+                },
+                {
+                    "trigger": "hover",
+                    "actions": [
+                        "lift"
+                    ],
+                    "intensity": 50,
+                    "duration": 350
+                },
+                {
+                    "trigger": "hover",
+                    "actions": [
+                        "glow"
+                    ],
+                    "intensity": 50,
+                    "duration": 350
+                },
+                {
+                    "trigger": "hover",
+                    "actions": [
+                        "blur-others"
+                    ],
+                    "intensity": 50,
+                    "duration": 350
                 }
             ],
             "expandConfig": {
@@ -184,42 +236,70 @@
                 "icon": "🌍",
                 "title": "Sostenibilidad",
                 "description": "Reducimos la huella de carbono y promovemos el uso responsable de los recursos naturales.",
-                "geometry": { "x": 0, "y": 0, "w": 280, "h": "auto", "z": 1 },
+                "geometry": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 280,
+                    "h": "auto",
+                    "z": 1
+                },
                 "effects": []
             },
             {
                 "icon": "🤝",
                 "title": "Compromiso Social",
                 "description": "Trabajamos con comunidades, liceos y vecinos impulsando la educación ambiental.",
-                "geometry": { "x": 0, "y": 0, "w": 280, "h": "auto", "z": 1 },
+                "geometry": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 280,
+                    "h": "auto",
+                    "z": 1
+                },
                 "effects": []
             },
             {
                 "icon": "⚙️",
                 "title": "Excelencia Técnica",
                 "description": "Altos estándares y mejora continua con innovación tecnológica en cada proyecto.",
-                "geometry": { "x": 0, "y": 0, "w": 280, "h": "auto", "z": 1 },
+                "geometry": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 280,
+                    "h": "auto",
+                    "z": 1
+                },
                 "effects": []
             },
             {
                 "icon": "📚",
                 "title": "Educación",
                 "description": "Capacitación y transferencia de conocimientos para fortalecer capacidades locales.",
-                "geometry": { "x": 0, "y": 0, "w": 280, "h": "auto", "z": 1 },
+                "geometry": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 280,
+                    "h": "auto",
+                    "z": 1
+                },
                 "effects": []
             },
             {
                 "icon": "💚",
                 "title": "Valor Compartido",
                 "description": "Creamos empleo verde y relaciones de largo plazo basadas en confianza mutua.",
-                "geometry": { "x": 0, "y": 0, "w": 280, "h": "auto", "z": 1 },
+                "geometry": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 280,
+                    "h": "auto",
+                    "z": 1
+                },
                 "effects": []
             }
         ],
         "config": {
             "layout": "carousel",
-            "interaction": "expand",
-            "hover": "glow",
             "border": "neon",
             "background": {
                 "type": "gradient",
@@ -247,6 +327,22 @@
                     "intensity": 1,
                     "duration": 800,
                     "overflow": false
+                },
+                {
+                    "trigger": "hover",
+                    "actions": [
+                        "glow"
+                    ],
+                    "intensity": 50,
+                    "duration": 350
+                },
+                {
+                    "trigger": "hover",
+                    "actions": [
+                        "expand"
+                    ],
+                    "intensity": 50,
+                    "duration": 350
                 }
             ],
             "expandConfig": {
@@ -288,35 +384,65 @@
                 "image": "https://gabqc77s-spec.github.io/eficell/uploads/Imagen1.png",
                 "imgPosition": "2% 0%",
                 "imgZoom": 1.7,
-                "geometry": { "x": 0, "y": 0, "w": 250, "h": "auto", "z": 1 },
+                "geometry": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 250,
+                    "h": "auto",
+                    "z": 1
+                },
                 "effects": []
             },
             {
                 "name": "Pablo Navarro D.",
                 "role": "Gerente Operaciones - Ing. Eléctrico",
                 "image": "https://ui-avatars.com/api/?name=Pablo+Navarro&background=random&size=200",
-                "geometry": { "x": 0, "y": 0, "w": 250, "h": "auto", "z": 1 },
+                "geometry": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 250,
+                    "h": "auto",
+                    "z": 1
+                },
                 "effects": []
             },
             {
                 "name": "Enrique Palacios",
                 "role": "Ing. Químico - Especialista en Fundición",
                 "image": "https://ui-avatars.com/api/?name=Enrique+Palacios&background=random&size=200",
-                "geometry": { "x": 0, "y": 0, "w": 250, "h": "auto", "z": 1 },
+                "geometry": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 250,
+                    "h": "auto",
+                    "z": 1
+                },
                 "effects": []
             },
             {
                 "name": "Stephane Acuña",
                 "role": "Ing. Biotecnología - Especialista Proyecto Innovación",
                 "image": "https://ui-avatars.com/api/?name=Stephane+Acuna&background=random&size=200",
-                "geometry": { "x": 0, "y": 0, "w": 250, "h": "auto", "z": 1 },
+                "geometry": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 250,
+                    "h": "auto",
+                    "z": 1
+                },
                 "effects": []
             },
             {
                 "name": "Julio Delgado",
                 "role": "Ing. Químico - Ing. Prevención Riesgo",
                 "image": "https://ui-avatars.com/api/?name=Julio+Delgado&background=random&size=200",
-                "geometry": { "x": 0, "y": 0, "w": 250, "h": "auto", "z": 1 },
+                "geometry": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 250,
+                    "h": "auto",
+                    "z": 1
+                },
                 "effects": []
             }
         ],

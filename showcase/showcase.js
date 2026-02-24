@@ -855,7 +855,7 @@ class Showcase {
     // ============================================
     async loadContent() {
         try {
-            const response = await fetch('../content.json');
+            const response = await fetch('../content.json?t=' + Date.now());
             if (!response.ok) throw new Error('No se pudo cargar content.json');
             this.content = await response.json();
         } catch (error) {
@@ -1119,13 +1119,17 @@ class Showcase {
                 contentHtml = `
                     <div class="services-carousel ${classes}" data-layout="carousel">
                         <div class="carousel-track">
-                            ${services.items.map((item, i) => `
-                                <div class="carousel-slide service-card" data-delay="${i * 100}">
+                            ${services.items.map((item, i) => {
+                                const styleOverride = (item.geometry && item.geometry.override) ?
+                                    `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};` : '';
+                                return `
+                                <div class="carousel-slide service-card" data-delay="${i * 100}" style="${styleOverride}">
                                     <span class="card-icon">${item.icon}</span>
                                     <h3>${item.title}</h3>
                                     <p>${item.description}</p>
                                 </div>
-                            `).join('')}
+                            `;
+                        }).join('')}
                         </div>
                         <div class="carousel-nav">
                             <button class="carousel-btn prev" onclick="this.closest('.services-carousel').querySelector('.carousel-track').scrollBy(-350, 0)">←</button>
@@ -1188,8 +1192,10 @@ class Showcase {
                                 z-index: ${zIndex};
                                 transform: rotate(${geo.r || 0}deg);
                             `;
+                            const styleOverride = (item.geometry && item.geometry.override) ?
+                                `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};` : '';
                             return `
-                                <div class="service-card freeform-item" data-index="${i}" style="${style}">
+                                <div class="carousel-slide service-card" data-delay="${i * 100}" style="${styleOverride}">
                                     <span class="card-icon">${item.icon}</span>
                                     <h3>${item.title}</h3>
                                     <p>${item.description}</p>
@@ -1202,13 +1208,16 @@ class Showcase {
             default: // grid
                 contentHtml = `
                     <div class="services-grid ${classes}" data-layout="grid" style="--columns: ${columns}">
-                        ${services.items.map((item, i) => `
-                            <div class="service-card" data-delay="${i * 100}">
+                        ${services.items.map((item, i) => {
+                            const styleOverride = (item.geometry && item.geometry.override) ?
+                                `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};` : '';
+                            return `
+                            <div class="service-card" data-delay="${i * 100}" style="${styleOverride}">
                                 <span class="card-icon">${item.icon}</span>
                                 <h3>${item.title}</h3>
                                 <p>${item.description}</p>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div>`;
         }
 
@@ -1270,13 +1279,17 @@ class Showcase {
                 contentHtml = `
                     <div class="benefits-carousel ${classes}" data-layout="carousel">
                         <div class="carousel-track">
-                            ${benefits.items.map((item, i) => `
-                                <div class="carousel-slide benefit-item" data-delay="${i * 80}">
+                            ${benefits.items.map((item, i) => {
+                                const styleOverride = (item.geometry && item.geometry.override) ?
+                                    `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};` : '';
+                                return `
+                                <div class="carousel-slide benefit-item" data-delay="${i * 80}" style="${styleOverride}">
                                     <span class="benefit-icon">${item.icon}</span>
                                     <h4>${item.title}</h4>
                                     <p>${item.description}</p>
                                 </div>
-                            `).join('')}
+                            `;
+                        }).join('')}
                         </div>
                     </div>`;
                 break;
@@ -1344,8 +1357,10 @@ class Showcase {
                                 z-index: ${zIndex};
                                 transform: rotate(${geo.r || 0}deg);
                             `;
+                            const styleOverride = (item.geometry && item.geometry.override) ?
+                                `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};` : '';
                             return `
-                                <div class="benefit-item freeform-item" data-index="${i}" style="${style}">
+                                <div class="carousel-slide benefit-item" data-delay="${i * 80}" style="${styleOverride}">
                                     <span class="benefit-icon">${item.icon}</span>
                                     <h4>${item.title}</h4>
                                     <p>${item.description}</p>
@@ -1358,13 +1373,16 @@ class Showcase {
             default: // grid
                 contentHtml = `
                     <div class="benefits-grid ${classes}" data-layout="grid" style="--columns: ${columns}">
-                        ${benefits.items.map((item, i) => `
-                            <div class="benefit-item" data-delay="${i * 80}">
+                        ${benefits.items.map((item, i) => {
+                            const styleOverride = (item.geometry && item.geometry.override) ?
+                                `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};` : '';
+                            return `
+                            <div class="benefit-item" data-delay="${i * 80}" style="${styleOverride}">
                                 <span class="benefit-icon">${item.icon}</span>
                                 <h4>${item.title}</h4>
                                 <p>${item.description}</p>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div>`;
         }
 
@@ -1395,15 +1413,22 @@ class Showcase {
             contentHtml = `
                 <div class="team-carousel ${classes}" data-layout="carousel">
                     <div class="carousel-track">
-                        ${team.items.map((item, i) => `
-                            <div class="carousel-slide team-card" data-delay="${i * 100}">
-                                <div class="team-img-wrapper">
-                                    <img src="${item.image}" alt="${item.name}" class="team-img" ${buildImgStyle(item)}>
+                        ${team.items.map((item, i) => {
+                                if (item.geometry && item.geometry.override) {
+                                    console.log('Rendering item with override:', i, item.geometry);
+                                }
+                            const styleOverride = (item.geometry && item.geometry.override) ?
+                                `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};` : '';
+                            return `
+                                <div class="carousel-slide team-card" data-delay="${i * 100}" style="${styleOverride}">
+                                    <div class="team-img-wrapper">
+                                        <img src="${item.image}" alt="${item.name}" class="team-img" ${buildImgStyle(item)}>
+                                    </div>
+                                    <h3>${item.name}</h3>
+                                    <p>${item.role}</p>
                                 </div>
-                                <h3>${item.name}</h3>
-                                <p>${item.role}</p>
-                            </div>
-                        `).join('')}
+                            `;
+                        }).join('')}
                     </div>
                     <div class="carousel-nav">
                         <button class="carousel-btn prev" onclick="this.closest('.team-carousel').querySelector('.carousel-track').scrollBy(-300, 0)">←</button>
@@ -1414,15 +1439,18 @@ class Showcase {
             // grid (default)
             contentHtml = `
                 <div class="team-grid ${classes}" data-layout="grid" style="--columns: ${columns}">
-                    ${team.items.map((item, i) => `
-                        <div class="team-card" data-delay="${i * 100}">
+                    ${team.items.map((item, i) => {
+                        const styleOverride = (item.geometry && item.geometry.override) ?
+                            `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};` : '';
+                        return `
+                        <div class="team-card" data-delay="${i * 100}" style="${styleOverride}">
                             <div class="team-img-wrapper">
                                 <img src="${item.image}" alt="${item.name}" class="team-img" ${buildImgStyle(item)}>
                             </div>
                             <h3>${item.name}</h3>
                             <p>${item.role}</p>
                         </div>
-                    `).join('')}
+                    `}).join('')}
                 </div>`;
         }
 

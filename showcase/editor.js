@@ -877,11 +877,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const card = document.createElement('div');
         card.className = 'item-card';
 
-        // If in freeform mode, show geometry controls
-        if (section.config?.layout === 'freeform') {
+        // Geometry Controls (Freeform & Hybrid)
+        // Show if layout is freeform OR if manual override exists
+        const isFreeform = section.config?.layout === 'freeform';
+        const hasOverride = item.geometry && item.geometry.override;
+
+        if (isFreeform || hasOverride) {
             const geoHeader = document.createElement('div');
             geoHeader.className = 'geo-controls';
-            geoHeader.style.cssText = 'display:flex; gap:0.5rem; margin-bottom:0.5rem; background:var(--bg-dark); padding:0.3rem; border-radius:4px; font-size:0.7rem;';
+            geoHeader.style.cssText = 'display:flex; gap:0.5rem; margin-bottom:0.5rem; background:var(--bg-dark); padding:0.3rem; border-radius:4px; font-size:0.7rem; flex-wrap:wrap;';
 
             const geo = item.geometry || { x: 0, y: 0, w: 200, h: 'auto', z: 1, r: 0 };
 
@@ -961,6 +965,25 @@ document.addEventListener('DOMContentLoaded', () => {
             zWrap.appendChild(zControls);
 
             geoHeader.appendChild(zWrap);
+
+            // Reset Button for Hybrid Mode
+            if (hasOverride && !isFreeform) {
+                const resetBtn = document.createElement('button');
+                resetBtn.textContent = '↺ Reset Posición';
+                resetBtn.style.cssText = 'width:100%; margin-top:4px; border:1px solid var(--border); background:rgba(255,50,50,0.2); color:#ffcccc; cursor:pointer; font-size:0.7rem; border-radius:3px;';
+                resetBtn.onclick = () => {
+                    if (confirm('¿Restablecer posición automática para este elemento?')) {
+                        delete item.geometry.override;
+                        // Also reset x/y to clean up
+                        item.geometry.x = 0;
+                        item.geometry.y = 0;
+                        updatePreview();
+                        renderSidebar();
+                        pushHistory();
+                    }
+                };
+                geoHeader.appendChild(resetBtn);
+            }
 
             card.appendChild(geoHeader);
         }
