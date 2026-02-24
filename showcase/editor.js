@@ -1182,7 +1182,36 @@ document.addEventListener('DOMContentLoaded', () => {
         fxDiv.className = 'effects-builder';
         fxDiv.innerHTML = '<label class="config-label">⚡ Efectos</label>';
 
+        // Migrate Legacy Effects (hover, cardEffect, interaction) to effects array if they exist
         if (!section.config.effects) section.config.effects = [];
+
+        // Helper to migrate legacy prop
+        const migrateLegacy = (prop, trigger, action) => {
+            if (section.config[prop]) {
+                // Check if already in effects array to avoid dups
+                const exists = section.config.effects.some(e => e.trigger === trigger && e.actions.includes(action));
+                if (!exists) {
+                    // Map legacy value to action if value is the action name (e.g. hover="lift")
+                    let act = action;
+                    if (!act) act = section.config[prop]; // value is the action
+
+                    // Normalize action names
+                    if (act === 'focus') act = 'blur-others';
+
+                    section.config.effects.push({
+                        trigger: trigger,
+                        actions: [act],
+                        intensity: 50,
+                        duration: 350
+                    });
+                }
+                delete section.config[prop]; // Remove legacy prop after migration
+            }
+        };
+
+        migrateLegacy('hover', 'hover', null);       // e.g. hover: "lift" -> trigger:hover, action:lift
+        migrateLegacy('cardEffect', 'hover', 'glow'); // legacy mapping
+        migrateLegacy('interaction', 'hover', null);  // e.g. interaction: "focus" -> trigger:hover, action:blur-others
 
         // Render existing effect pills with detail
         const pillsContainer = document.createElement('div');
