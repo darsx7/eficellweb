@@ -1257,7 +1257,7 @@ document.addEventListener('DOMContentLoaded', () => {
         configRow.className = 'config-row';
 
         // --- Layout ---
-        configRow.appendChild(createSelect('Layout', ['grid', 'carousel', 'list', 'featured', 'freeform'], section.config?.layout || 'grid', (val) => {
+        configRow.appendChild(createSelect('Layout', ['grid', 'carousel', 'list', 'featured', 'freeform', 'orbit'], section.config?.layout || 'grid', (val) => {
             section.config.layout = val;
             updatePreview();
             renderSidebar(); // Re-render to show/hide geometry controls based on layout
@@ -1570,6 +1570,67 @@ document.addEventListener('DOMContentLoaded', () => {
             carouselDiv.appendChild(buildSlider('Autoplay (ms, 0=off)', co.autoPlay || 0, 0, 5000, 500, 'ms', (v) => { co.autoPlay = v; }));
 
             configRow.appendChild(carouselDiv);
+        }
+
+        // --- Orbit / Physics Interaction Config ---
+        if (section.config?.layout === 'orbit') {
+            const interactDiv = document.createElement('div');
+            interactDiv.className = 'interact-config';
+            interactDiv.style.cssText = 'margin-top: 1rem; padding: 0.5rem; background: rgba(50,255,100,0.05); border: 1px solid var(--border); border-radius: 8px;';
+            interactDiv.innerHTML = '<label class="config-label">🪐 Física Orbital</label>';
+
+            if (!section.config.orbitOptions) {
+                section.config.orbitOptions = { radius: 400, perspective: 1000, tiltX: 10, tiltY: 0, speed: 1 };
+            }
+            const oo = section.config.orbitOptions;
+
+            // Orbit Params
+            interactDiv.appendChild(buildSlider('Radio (px)', oo.radius || 400, 200, 1000, 50, 'px', (v) => { oo.radius = v; }));
+            interactDiv.appendChild(buildSlider('Perspectiva', oo.perspective || 1000, 500, 2000, 100, 'px', (v) => { oo.perspective = v; }));
+            interactDiv.appendChild(buildSlider('Inclinación X', oo.tiltX || 0, -90, 90, 5, '°', (v) => { oo.tiltX = v; }));
+            interactDiv.appendChild(buildSlider('Inclinación Y', oo.tiltY || 0, -90, 90, 5, '°', (v) => { oo.tiltY = v; }));
+            interactDiv.appendChild(buildSlider('Velocidad Base', oo.speed || 1, 0, 5, 0.1, 'x', (v) => { oo.speed = v; }));
+
+            // Interactions Map
+            if (!section.config.interactions) {
+                section.config.interactions = { scrollMap: 'rotate', dragPhysics: true, networkLink: true };
+            }
+            const int = section.config.interactions;
+
+            const intLabel = document.createElement('label');
+            intLabel.className = 'config-label';
+            intLabel.style.fontSize = '0.75rem';
+            intLabel.style.marginTop = '0.5rem';
+            intLabel.textContent = '🕹️ Gestos';
+            interactDiv.appendChild(intLabel);
+
+            interactDiv.appendChild(createSelect('Scroll Mapeo', ['none', 'rotate', 'zoom', 'tilt'], int.scrollMap || 'rotate', (val) => {
+                int.scrollMap = val;
+                updatePreview();
+            }));
+
+            // Checkboxes
+            const physLabel = document.createElement('label');
+            physLabel.className = 'action-checkbox';
+            const physCb = document.createElement('input');
+            physCb.type = 'checkbox';
+            physCb.checked = int.dragPhysics !== false;
+            physCb.onchange = () => { int.dragPhysics = physCb.checked; updatePreview(); };
+            physLabel.appendChild(physCb);
+            physLabel.appendChild(document.createTextNode(' Lanzar con Inercia (Throw)'));
+            interactDiv.appendChild(physLabel);
+
+            const netLabel = document.createElement('label');
+            netLabel.className = 'action-checkbox';
+            const netCb = document.createElement('input');
+            netCb.type = 'checkbox';
+            netCb.checked = int.networkLink !== false;
+            netCb.onchange = () => { int.networkLink = netCb.checked; updatePreview(); };
+            netLabel.appendChild(netCb);
+            netLabel.appendChild(document.createTextNode(' Vincular a Red de Fondo'));
+            interactDiv.appendChild(netLabel);
+
+            configRow.appendChild(interactDiv);
         }
 
         // --- Expanded Card Customization ---
