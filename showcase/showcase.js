@@ -1095,13 +1095,14 @@ class Showcase {
                     <div class="services-freeform ${classes}" data-layout="freeform" style="position: relative; min-height: 600px;">
                         ${services.items.map((item, i) => {
                             const geo = item.geometry || { x: 50 + (i % 2) * 350, y: 50 + Math.floor(i / 2) * 300, w: 300, h: 'auto', z: 1 };
+                            const zIndex = geo.z !== undefined ? geo.z : 1;
                             const style = `
                                 position: absolute;
                                 left: ${geo.x}px;
                                 top: ${geo.y}px;
                                 width: ${geo.w}px;
                                 height: ${geo.h === 'auto' ? 'auto' : geo.h + 'px'};
-                                z-index: ${geo.z};
+                                z-index: ${zIndex};
                                 transform: rotate(${geo.r || 0}deg);
                             `;
                             return `
@@ -1250,13 +1251,14 @@ class Showcase {
                     <div class="benefits-freeform ${classes}" data-layout="freeform" style="position: relative; min-height: 600px;">
                         ${benefits.items.map((item, i) => {
                             const geo = item.geometry || { x: 50 + (i % 3) * 300, y: 50 + Math.floor(i / 3) * 250, w: 280, h: 'auto', z: 1 };
+                            const zIndex = geo.z !== undefined ? geo.z : 1;
                             const style = `
                                 position: absolute;
                                 left: ${geo.x}px;
                                 top: ${geo.y}px;
                                 width: ${geo.w}px;
                                 height: ${geo.h === 'auto' ? 'auto' : geo.h + 'px'};
-                                z-index: ${geo.z};
+                                z-index: ${zIndex};
                                 transform: rotate(${geo.r || 0}deg);
                             `;
                             return `
