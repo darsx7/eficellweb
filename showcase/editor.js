@@ -150,10 +150,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const { section, index, geometry } = event.data;
             if (content[section] && content[section].items && content[section].items[index]) {
                 content[section].items[index].geometry = geometry;
-                pushHistory(); // Optional: might be too frequent if ondrag, but okay for onmouseup
-                // We don't need to re-render sidebar or preview immediately as the DOM is already there
-                // But we should mark unsaved changes visually if we had that feature
+                pushHistory();
             }
+        } else if (event.data.type === 'config-updated') {
+             const { section, configKey, config } = event.data;
+             if (content[section] && content[section].config) {
+                 content[section].config[configKey] = config;
+                 pushHistory();
+                 // Re-render only if this section is active to show new slider value
+                 const activeSection = document.querySelector(`.section-item.active[data-key="${section}"]`);
+                 if (activeSection) {
+                     renderSidebar(); // Heavy but ensures UI sync
+                 }
+             }
         }
     });
 

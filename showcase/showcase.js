@@ -481,6 +481,14 @@ class Showcase {
                         if (this.orbitInstances && this.orbitInstances[sectionId]) {
                             this.orbitInstances[sectionId].update();
                         }
+
+                        // Sync with Editor
+                        window.parent.postMessage({
+                            type: 'config-updated',
+                            section: key,
+                            configKey: 'orbitOptions',
+                            config: this.content[key].config.orbitOptions
+                        }, globalThis.location.origin);
                     }
                 }
             }
