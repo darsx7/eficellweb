@@ -378,6 +378,9 @@ class Showcase {
         // Aplicar estilos desde content.theme
         this.applyStyles();
 
+        // Construir la página inicial
+        this.buildPage();
+
         // Inicializar red
         this.initNetwork();
 
@@ -504,6 +507,76 @@ class Showcase {
         this.buildPage();
         this.startAnimations();
         this.createBurstEffect();
+    }
+
+    setupControls() {
+        // Create floating control panel
+        const panel = document.createElement('div');
+        panel.className = 'theme-controls';
+        panel.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(30, 30, 46, 0.9);
+            padding: 15px;
+            border-radius: 12px;
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        `;
+
+        // Add toggle button to hide/show panel (optional but good for UX)
+        // For now, just the template buttons
+        Object.entries(TEMPLATES).forEach(([key, template]) => {
+            const btn = document.createElement('button');
+            btn.className = 'theme-btn';
+            btn.title = template.description;
+            btn.style.cssText = `
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                border: 2px solid rgba(255,255,255,0.2);
+                background: ${template.theme.primary};
+                cursor: pointer;
+                transition: transform 0.2s ease, border-color 0.2s ease;
+            `;
+
+            btn.onmouseover = () => {
+                btn.style.transform = 'scale(1.2)';
+                btn.style.borderColor = '#fff';
+            };
+            btn.onmouseout = () => {
+                btn.style.transform = 'scale(1)';
+                btn.style.borderColor = 'rgba(255,255,255,0.2)';
+            };
+
+            btn.onclick = () => {
+                // Flash effect
+                const flash = document.createElement('div');
+                flash.style.cssText = `
+                    position: fixed;
+                    inset: 0;
+                    background: white;
+                    opacity: 0.8;
+                    z-index: 99999;
+                    pointer-events: none;
+                    transition: opacity 0.5s ease;
+                `;
+                document.body.appendChild(flash);
+                requestAnimationFrame(() => flash.style.opacity = '0');
+                setTimeout(() => flash.remove(), 500);
+
+                this.applyTemplatePreset(key);
+            };
+
+            panel.appendChild(btn);
+        });
+
+        document.body.appendChild(panel);
     }
 
     setupInteractions() {
@@ -1538,6 +1611,14 @@ class Showcase {
                 easing: 'cubic-bezier(0.16, 1, 0.3, 1)'
             }).onfinish = () => particle.remove();
         }
+    }
+
+    hexToRgba(hex, alpha) {
+        if (!hex) return `rgba(0,0,0,${alpha})`;
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
     applyStyles() {

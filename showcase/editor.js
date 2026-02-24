@@ -52,12 +52,40 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     async function loadContent() {
         try {
-            const res = await fetch('../content.json');
+            // Try fetching from root first (dev server often serves root)
+            let res = await fetch('/content.json');
+            if (!res.ok) {
+                // Fallback to relative path if served from subdirectory
+                res = await fetch('../content.json');
+            }
+            if (!res.ok) throw new Error('Content not found');
+
             content = await res.json();
             pushHistory();
             renderSidebar();
         } catch (e) {
             console.error('Error loading content', e);
+            alert('No se pudo cargar content.json. Verifique la consola.');
+            // Fallback content to prevent crash
+            content = {
+                siteName: 'Showcase',
+                theme: {
+                    primary: '#f59e0b',
+                    secondary: '#fbbf24',
+                    bgDark: '#1e1e2e',
+                    network: { lineColor: '#f59e0b', glowColor: '#fbbf24', gridDensity: 40 },
+                    styles: { cards: {}, effects: {} }
+                },
+                hero: { title: 'Error Carga', subtitle: 'No se pudo cargar el contenido.', stats: [] },
+                services: { title: 'Servicios', items: [], config: {} },
+                benefits: { title: 'Beneficios', items: [], config: {} },
+                team: { title: 'Equipo', items: [], config: {} },
+                about: { title: 'Nosotros', description: '', config: {} },
+                contact: { title: 'Contacto', config: {} },
+                footer: { copyright: '© 2026' },
+                nav: { items: [] }
+            };
+            renderSidebar();
         }
     }
 
