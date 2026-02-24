@@ -382,6 +382,7 @@ class Showcase {
         this.buildPage();
 
         // Inicializar red
+        this.activeInteractions = new Map();
         this.initNetwork();
 
         // Configurar controles
@@ -392,6 +393,9 @@ class Showcase {
 
         // Configurar interacciones
         this.setupInteractions();
+
+        // Configurar gestos (Pinch, etc)
+        this.setupGestures();
 
         // Escuchar mensajes del editor (verificando origen)
         globalThis.addEventListener('message', (event) => {
@@ -419,160 +423,302 @@ class Showcase {
         }
     }
 
+    setupGestures() {
+        let initialPinchDistance = null;
+        let initialRadius = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                initialPinchDistance = Math.sqrt(dx * dx + dy * dy);
+
+                const target = e.touches[0].target;
+                const section = target.closest('section');
+
+                // Identify if we are in orbit mode
+                if (section && section.querySelector('[data-layout="orbit"]')) {
+                     const sectionId = section.id;
+                     let key = '';
+                     if(sectionId === 'servicios') key = 'services';
+                     else if(sectionId === 'beneficios') key = 'benefits';
+                     else if(sectionId === 'equipo') key = 'team';
+
+                     if (this.content[key]?.config?.orbitOptions) {
+                         initialRadius = this.content[key].config.orbitOptions.radius || 400;
+                     }
+                }
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2 && initialPinchDistance) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const currentDistance = Math.sqrt(dx * dx + dy * dy);
+
+                const scale = currentDistance / initialPinchDistance;
+
+                const target = e.touches[0].target;
+                const section = target.closest('section');
+
+                if (section && section.querySelector('[data-layout="orbit"]')) {
+                    e.preventDefault(); // Prevent page zoom
+
+                    const sectionId = section.id;
+                    let key = '';
+                    if(sectionId === 'servicios') key = 'services';
+                    else if(sectionId === 'beneficios') key = 'benefits';
+                    else if(sectionId === 'equipo') key = 'team';
+
+                    if (this.content[key]?.config?.orbitOptions) {
+                        const newRadius = initialRadius * scale;
+                        const clampedRadius = Math.max(100, Math.min(1000, newRadius));
+
+                        this.content[key].config.orbitOptions.radius = clampedRadius;
+
+                        // Force Update
+                        if (this.orbitInstances && this.orbitInstances[sectionId]) {
+                            this.orbitInstances[sectionId].update();
+                        }
+                    }
+                }
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) {
+                initialPinchDistance = null;
+            }
+        });
+    }
+
     setupDraggableItems() {
-        // Now targeting ALL section items if we want mixed layout support
         const items = document.querySelectorAll('.service-card, .benefit-item, .team-card');
 
         let draggedItem = null;
         let startX, startY, initialLeft, initialTop;
+        let velocityX = 0, velocityY = 0, lastX = 0, lastY = 0, lastTime = 0;
+        let animationFrame;
+
+        // Physics constants
+        const FRICTION = 0.95;
+        const SPRING = 0.1;
 
         items.forEach(item => {
-            // Prevent default drag
             item.ondragstart = () => false;
 
-            item.onmousedown = (e) => {
-                if (!this.isEditMode) return; // Only in edit mode
-
-                // Ignore inputs/buttons
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
-
-                e.preventDefault();
-                draggedItem = item;
-                startX = e.clientX;
-                startY = e.clientY;
-
-                // Get computed style for current position, handling both absolute and relative
-                const style = window.getComputedStyle(item);
-                const matrix = new WebKitCSSMatrix(style.transform);
-
-                // For absolute positioning (freeform), use offsetLeft/Top
-                // For relative/grid, we might want to switch to transform: translate
-                // BUT user requested "move freely".
-                // Best approach: If item has manual override, it should be position:absolute relative to container?
-                // Or use transform translate?
-                // Given the requirement "hybrid layout", transform translate is safer for grid items to offset them.
-                // But for pure freeform, absolute is better.
-
-                // Let's assume we use style.left/top if positioned, or transform if not.
-                // Simplified: We will use inline style left/top and ensure position is set.
-
-                // If not already absolute/relative with coords, initialize
-                if (style.position === 'static') {
-                    item.style.position = 'relative';
-                }
-
-                initialLeft = item.offsetLeft;
-                initialTop = item.offsetTop;
-
-                item.classList.add('dragging');
-                item.style.cursor = 'grabbing';
-
-                // Add resize handle if not present
-                if (!item.querySelector('.resize-handle')) {
-                    const handle = document.createElement('div');
-                    handle.className = 'resize-handle';
-                    handle.style.cssText = `
-                        position: absolute; bottom: 5px; right: 5px; width: 15px; height: 15px;
-                        background: white; border: 2px solid var(--primary);
-                        cursor: se-resize; z-index: 100;
-                    `;
-                    handle.onmousedown = (ev) => {
-                        ev.stopPropagation(); // Prevent drag
-                        this.startResize(ev, item);
-                    };
-                    item.appendChild(handle);
-                }
-            };
-        });
-
-        document.onmousemove = (e) => {
-            if (!draggedItem) return;
-            e.preventDefault();
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-
-            // If the layout is NOT freeform, dragging changes transform translate
-            // If layout IS freeform, dragging changes left/top
-            const section = draggedItem.closest('section');
-            const layout = section.dataset.layout || 'grid';
-
-            if (layout === 'freeform') {
-                const newLeft = initialLeft + dx;
-                const newTop = initialTop + dy;
-                draggedItem.style.left = `${newLeft}px`;
-                draggedItem.style.top = `${newTop}px`;
-            } else {
-                // Hybrid mode: Use transform for offset
-                draggedItem.style.transform = `translate(${dx}px, ${dy}px)`;
-                // Note: This is temporary visual. We need to decide how to persist this.
-                // Ideally we update geometry.x/y and render it as transform in grid mode.
-            }
-        };
-
-        document.onmouseup = () => {
-            if (draggedItem) {
-                draggedItem.classList.remove('dragging');
-                draggedItem.style.cursor = '';
-
-                const section = draggedItem.closest('section');
+            // Mouse/Touch Down
+            const startDrag = (e) => {
+                // If NOT in Edit Mode, check if "Drag Physics" is enabled for this section
+                // If yes, allow dragging with physics. If no, return.
+                // NOTE: User requested "Throwing" card in interaction, not just edit.
+                const section = item.closest('section');
                 const sectionId = section?.id;
                 let sectionKey = '';
                 if(sectionId === 'servicios') sectionKey = 'services';
                 else if(sectionId === 'beneficios') sectionKey = 'benefits';
                 else if(sectionId === 'equipo') sectionKey = 'team';
 
-                // We need index. Some layouts might not expose data-index on item directly.
-                // Let's ensure buildServices/etc add data-index to all items.
-                // Assuming they do (I added it to freeform, but maybe not others).
-                // Let's traverse to find index if missing
-                let index = draggedItem.dataset.index;
-                if (index === undefined) {
-                    // Fallback: find index in parent children
-                    const children = Array.from(draggedItem.parentNode.children);
-                    index = children.indexOf(draggedItem);
+                const interactConfig = this.content[sectionKey]?.config?.interactions || {};
+                const physicsEnabled = interactConfig.dragPhysics;
+
+                if (!this.isEditMode && !physicsEnabled) return;
+
+                // Stop inputs
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+
+                e.preventDefault();
+                draggedItem = item;
+
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+
+                startX = clientX;
+                startY = clientY;
+                lastX = clientX;
+                lastY = clientY;
+                lastTime = Date.now();
+                velocityX = 0;
+                velocityY = 0;
+
+                // Cancel existing inertia
+                if(item.dataset.animId) cancelAnimationFrame(parseInt(item.dataset.animId));
+
+                // Hybrid/Freeform initialization
+                const style = window.getComputedStyle(item);
+                if (style.position === 'static') item.style.position = 'relative';
+                initialLeft = item.offsetLeft;
+                initialTop = item.offsetTop;
+
+                item.classList.add('dragging');
+                item.style.cursor = 'grabbing';
+                item.style.zIndex = '100'; // Bring to front while dragging
+
+                // Add resize handle in Edit Mode
+                if (this.isEditMode && !item.querySelector('.resize-handle')) {
+                    const handle = document.createElement('div');
+                    handle.className = 'resize-handle';
+                    handle.style.cssText = `position: absolute; bottom: 5px; right: 5px; width: 15px; height: 15px; background: white; border: 2px solid var(--primary); cursor: se-resize; z-index: 101;`;
+                    handle.onmousedown = (ev) => { ev.stopPropagation(); this.startResize(ev, item); };
+                    item.appendChild(handle);
                 }
+            };
 
-                if (sectionKey && index !== -1) {
-                    const layout = section.dataset.layout || 'grid';
-                    let geometry = {};
+            item.onmousedown = startDrag;
+            item.ontouchstart = startDrag;
+        });
 
-                    if (layout === 'freeform') {
-                        geometry = {
-                            x: draggedItem.offsetLeft,
-                            y: draggedItem.offsetTop,
-                            w: draggedItem.offsetWidth,
-                            h: draggedItem.offsetHeight,
-                            z: getComputedStyle(draggedItem).zIndex || 1
-                        };
-                    } else {
-                        // For hybrid, we want to save the DELTA (transform) as x/y?
-                        // Or convert to absolute?
-                        // User said: "move freely but work as carousel".
-                        // This implies an offset.
-                        // Let's save x/y as the transform values.
-                        const style = window.getComputedStyle(draggedItem);
-                        const matrix = new WebKitCSSMatrix(style.transform);
-                        geometry = {
-                            x: matrix.m41, // Translate X
-                            y: matrix.m42, // Translate Y
-                            w: draggedItem.offsetWidth,
-                            h: 'auto',
-                            z: 1,
-                            override: true // Mark as manual override
-                        };
+        const moveDrag = (e) => {
+            if (!draggedItem) return;
+            // e.preventDefault(); // careful with touch scrolling
+
+            const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+            const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+
+            const dx = clientX - startX;
+            const dy = clientY - startY;
+
+            // Velocity calc
+            const now = Date.now();
+            const dt = now - lastTime;
+            if (dt > 0) {
+                velocityX = (clientX - lastX) / dt; // px/ms
+                velocityY = (clientY - lastY) / dt;
+            }
+            lastX = clientX;
+            lastY = clientY;
+            lastTime = now;
+
+            const section = draggedItem.closest('section');
+            const layout = section.dataset.layout || 'grid';
+
+            if (layout === 'freeform') {
+                draggedItem.style.left = `${initialLeft + dx}px`;
+                draggedItem.style.top = `${initialTop + dy}px`;
+            } else {
+                draggedItem.style.transform = `translate(${dx}px, ${dy}px)`;
+            }
+
+            // Update network interaction
+            const rect = draggedItem.getBoundingClientRect();
+            const cx = rect.left + rect.width/2;
+            const cy = rect.top + rect.height/2;
+            if(this.activeInteractions) this.activeInteractions.set(draggedItem, {x: cx, y: cy, radius: 250});
+        };
+
+        const endDrag = () => {
+            if (!draggedItem) return;
+
+            const item = draggedItem;
+            // Clear from active interactions if just a click/drag end without physics
+            if (this.isEditMode && this.activeInteractions) this.activeInteractions.delete(item);
+
+            draggedItem.classList.remove('dragging');
+            draggedItem.style.cursor = '';
+            draggedItem.style.zIndex = '';
+            draggedItem = null;
+
+            // Physics / Inertia Logic
+            if (!this.isEditMode) {
+                // If not in Edit Mode, we snap back or throw
+                // User wants "Throw and return to circle" (Snap back)
+                // We simulate inertia then spring back
+
+                // Get current transform
+                const style = window.getComputedStyle(item);
+                const matrix = new WebKitCSSMatrix(style.transform);
+                let currentX = matrix.m41;
+                let currentY = matrix.m42;
+
+                // Inertia loop
+                const loop = () => {
+                    if (Math.abs(velocityX) < 0.01 && Math.abs(velocityY) < 0.01 && Math.abs(currentX) < 1 && Math.abs(currentY) < 1) {
+                        item.style.transform = ''; // Reset
+                        if(this.activeInteractions) this.activeInteractions.delete(item);
+                        return;
                     }
 
-                    window.parent.postMessage({
-                        type: 'item-moved',
-                        section: sectionKey,
-                        index: parseInt(index),
-                        geometry: geometry
-                    }, globalThis.location.origin);
+                    // Apply friction
+                    velocityX *= FRICTION;
+                    velocityY *= FRICTION;
+
+                    // Apply Spring to 0,0
+                    const ax = (0 - currentX) * SPRING;
+                    const ay = (0 - currentY) * SPRING;
+
+                    velocityX += ax;
+                    velocityY += ay;
+
+                    currentX += velocityX * 16; // * dt (approx 16ms)
+                    currentY += velocityY * 16;
+
+                    item.style.transform = `translate(${currentX}px, ${currentY}px)`;
+
+                    // Network Interaction
+                    const rect = item.getBoundingClientRect();
+                    const cx = rect.left + rect.width/2;
+                    const cy = rect.top + rect.height/2;
+                    if(this.activeInteractions) this.activeInteractions.set(item, {x: cx, y: cy, radius: 250});
+
+                    item.dataset.animId = requestAnimationFrame(loop);
+                };
+                loop();
+                return;
+            }
+
+            // Edit Mode Persistence (Existing Logic)
+            const section = item.closest('section');
+            const sectionId = section?.id;
+            let sectionKey = '';
+            if(sectionId === 'servicios') sectionKey = 'services';
+            else if(sectionId === 'beneficios') sectionKey = 'benefits';
+            else if(sectionId === 'equipo') sectionKey = 'team';
+
+            let index = item.dataset.index;
+            if (index === undefined) {
+                const children = Array.from(item.parentNode.children);
+                index = children.indexOf(item);
+            }
+
+            if (sectionKey && index !== -1) {
+                const layout = section.dataset.layout || 'grid';
+                let geometry = {};
+
+                if (layout === 'freeform') {
+                    geometry = {
+                        x: item.offsetLeft,
+                        y: item.offsetTop,
+                        w: item.offsetWidth,
+                        h: item.offsetHeight,
+                        z: getComputedStyle(item).zIndex || 1
+                    };
+                } else {
+                    const style = window.getComputedStyle(item);
+                    const matrix = new WebKitCSSMatrix(style.transform);
+                    geometry = {
+                        x: matrix.m41,
+                        y: matrix.m42,
+                        w: item.offsetWidth,
+                        h: 'auto',
+                        z: 1,
+                        override: true
+                    };
                 }
 
-                draggedItem = null;
+                window.parent.postMessage({
+                    type: 'item-moved',
+                    section: sectionKey,
+                    index: parseInt(index),
+                    geometry: geometry
+                }, globalThis.location.origin);
             }
         };
+
+        document.addEventListener('mousemove', moveDrag);
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchmove', moveDrag);
+        document.addEventListener('touchend', endDrag);
     }
 
     applyTemplatePreset(templateName) {
@@ -855,7 +1001,7 @@ class Showcase {
     // ============================================
     async loadContent() {
         try {
-            const response = await fetch('../content.json');
+            const response = await fetch('../content.json?t=' + Date.now());
             if (!response.ok) throw new Error('No se pudo cargar content.json');
             this.content = await response.json();
         } catch (error) {
@@ -1047,6 +1193,7 @@ class Showcase {
                 if (fx.actions.includes('glow')) {
                     const g = (pct / 100) * 50; // 0.5px → 50px
                     styleVars.push(`--effect-glow-spread:${g.toFixed(0)}px`);
+                    if (fx.glowColor) styleVars.push(`--primary-glow:${fx.glowColor}`);
                 }
                 if (fx.actions.includes('rotate')) {
                     const r = (pct / 100) * 15; // 0 -> 15deg
@@ -1059,6 +1206,14 @@ class Showcase {
                 if (fx.actions.includes('blur')) {
                     const b = (pct / 100) * 10; // 0 -> 10px
                     styleVars.push(`--effect-blur:${b.toFixed(1)}px`);
+                }
+                // Granular animation overrides
+                if (fx.actions.includes('shake')) {
+                    if(fx.shakeX) styleVars.push(`--anim-shake-dist:${fx.shakeX}px`);
+                    if(fx.shakeRot) styleVars.push(`--anim-shake-rot:${fx.shakeRot}deg`);
+                }
+                if (fx.actions.includes('pulse')) {
+                    if(fx.pulseScale) styleVars.push(`--anim-pulse-scale:${fx.pulseScale}`);
                 }
 
                 if (fx.overflow) hasOverflow = true;
@@ -1119,13 +1274,27 @@ class Showcase {
                 contentHtml = `
                     <div class="services-carousel ${classes}" data-layout="carousel">
                         <div class="carousel-track">
-                            ${services.items.map((item, i) => `
-                                <div class="carousel-slide service-card" data-delay="${i * 100}">
+                            ${services.items.map((item, i) => {
+                            let style = '';
+                            if (item.geometry && item.geometry.override) {
+                                style += `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};`;
+                            }
+                            if (item.styleOverride) {
+                                const so = item.styleOverride;
+                                if (so.backgroundColor) style += `background-color: ${so.backgroundColor};`;
+                                if (so.borderColor) style += `border-color: ${so.borderColor};`;
+                                if (so.color) style += `color: ${so.color};`;
+                                if (so.borderRadius !== undefined && so.borderRadius !== -1) style += `border-radius: ${so.borderRadius}px;`;
+                                if (so.fontSizeScale) style += `font-size: ${so.fontSizeScale}em;`;
+                            }
+                                return `
+                                <div class="carousel-slide service-card" data-delay="${i * 100}" style="${style}">
                                     <span class="card-icon">${item.icon}</span>
                                     <h3>${item.title}</h3>
                                     <p>${item.description}</p>
                                 </div>
-                            `).join('')}
+                            `;
+                        }).join('')}
                         </div>
                         <div class="carousel-nav">
                             <button class="carousel-btn prev" onclick="this.closest('.services-carousel').querySelector('.carousel-track').scrollBy(-350, 0)">←</button>
@@ -1188,6 +1357,8 @@ class Showcase {
                                 z-index: ${zIndex};
                                 transform: rotate(${geo.r || 0}deg);
                             `;
+                            // Note: Freeform uses the style const above. StyleOverride is for hybrid.
+                            // Fixing previous bug where freeform used carousel-slide classes.
                             return `
                                 <div class="service-card freeform-item" data-index="${i}" style="${style}">
                                     <span class="card-icon">${item.icon}</span>
@@ -1199,16 +1370,44 @@ class Showcase {
                     </div>`;
                 break;
 
+            case 'orbit':
+                contentHtml = `
+                    <div class="orbit-container ${classes}" data-layout="orbit" style="position: relative; min-height: 600px; overflow: hidden;">
+                        <div class="orbit-ring" style="position: absolute; top: 50%; left: 50%; transform-style: preserve-3d;">
+                            ${services.items.map((item, i) => `
+                                <div class="orbit-item service-card" data-index="${i}">
+                                    <span class="card-icon">${item.icon}</span>
+                                    <h3>${item.title}</h3>
+                                    <p>${item.description}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+                break;
+
             default: // grid
                 contentHtml = `
                     <div class="services-grid ${classes}" data-layout="grid" style="--columns: ${columns}">
-                        ${services.items.map((item, i) => `
-                            <div class="service-card" data-delay="${i * 100}">
+                        ${services.items.map((item, i) => {
+                            let style = '';
+                            if (item.geometry && item.geometry.override) {
+                                style += `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};`;
+                            }
+                            if (item.styleOverride) {
+                                const so = item.styleOverride;
+                                if (so.backgroundColor) style += `background-color: ${so.backgroundColor};`;
+                                if (so.borderColor) style += `border-color: ${so.borderColor};`;
+                                if (so.color) style += `color: ${so.color};`;
+                                if (so.borderRadius !== undefined && so.borderRadius !== -1) style += `border-radius: ${so.borderRadius}px;`;
+                                if (so.fontSizeScale) style += `font-size: ${so.fontSizeScale}em;`;
+                            }
+                            return `
+                            <div class="service-card" data-delay="${i * 100}" style="${style}">
                                 <span class="card-icon">${item.icon}</span>
                                 <h3>${item.title}</h3>
                                 <p>${item.description}</p>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div>`;
         }
 
@@ -1270,13 +1469,27 @@ class Showcase {
                 contentHtml = `
                     <div class="benefits-carousel ${classes}" data-layout="carousel">
                         <div class="carousel-track">
-                            ${benefits.items.map((item, i) => `
-                                <div class="carousel-slide benefit-item" data-delay="${i * 80}">
+                            ${benefits.items.map((item, i) => {
+                            let style = '';
+                            if (item.geometry && item.geometry.override) {
+                                style += `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};`;
+                            }
+                            if (item.styleOverride) {
+                                const so = item.styleOverride;
+                                if (so.backgroundColor) style += `background-color: ${so.backgroundColor};`;
+                                if (so.borderColor) style += `border-color: ${so.borderColor};`;
+                                if (so.color) style += `color: ${so.color};`;
+                                if (so.borderRadius !== undefined && so.borderRadius !== -1) style += `border-radius: ${so.borderRadius}px;`;
+                                if (so.fontSizeScale) style += `font-size: ${so.fontSizeScale}em;`;
+                            }
+                                return `
+                                <div class="carousel-slide benefit-item" data-delay="${i * 80}" style="${style}">
                                     <span class="benefit-icon">${item.icon}</span>
                                     <h4>${item.title}</h4>
                                     <p>${item.description}</p>
                                 </div>
-                            `).join('')}
+                            `;
+                        }).join('')}
                         </div>
                     </div>`;
                 break;
@@ -1344,8 +1557,10 @@ class Showcase {
                                 z-index: ${zIndex};
                                 transform: rotate(${geo.r || 0}deg);
                             `;
+                            const styleOverride = (item.geometry && item.geometry.override) ?
+                                `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};` : '';
                             return `
-                                <div class="benefit-item freeform-item" data-index="${i}" style="${style}">
+                                <div class="carousel-slide benefit-item" data-delay="${i * 80}" style="${styleOverride}">
                                     <span class="benefit-icon">${item.icon}</span>
                                     <h4>${item.title}</h4>
                                     <p>${item.description}</p>
@@ -1358,13 +1573,26 @@ class Showcase {
             default: // grid
                 contentHtml = `
                     <div class="benefits-grid ${classes}" data-layout="grid" style="--columns: ${columns}">
-                        ${benefits.items.map((item, i) => `
-                            <div class="benefit-item" data-delay="${i * 80}">
+                        ${benefits.items.map((item, i) => {
+                            let style = '';
+                            if (item.geometry && item.geometry.override) {
+                                style += `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};`;
+                            }
+                            if (item.styleOverride) {
+                                const so = item.styleOverride;
+                                if (so.backgroundColor) style += `background-color: ${so.backgroundColor};`;
+                                if (so.borderColor) style += `border-color: ${so.borderColor};`;
+                                if (so.color) style += `color: ${so.color};`;
+                                if (so.borderRadius !== undefined && so.borderRadius !== -1) style += `border-radius: ${so.borderRadius}px;`;
+                                if (so.fontSizeScale) style += `font-size: ${so.fontSizeScale}em;`;
+                            }
+                            return `
+                            <div class="benefit-item" data-delay="${i * 80}" style="${style}">
                                 <span class="benefit-icon">${item.icon}</span>
                                 <h4>${item.title}</h4>
                                 <p>${item.description}</p>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div>`;
         }
 
@@ -1395,15 +1623,22 @@ class Showcase {
             contentHtml = `
                 <div class="team-carousel ${classes}" data-layout="carousel">
                     <div class="carousel-track">
-                        ${team.items.map((item, i) => `
-                            <div class="carousel-slide team-card" data-delay="${i * 100}">
-                                <div class="team-img-wrapper">
-                                    <img src="${item.image}" alt="${item.name}" class="team-img" ${buildImgStyle(item)}>
+                        ${team.items.map((item, i) => {
+                                if (item.geometry && item.geometry.override) {
+                                    console.log('Rendering item with override:', i, item.geometry);
+                                }
+                            const styleOverride = (item.geometry && item.geometry.override) ?
+                                `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};` : '';
+                            return `
+                                <div class="carousel-slide team-card" data-delay="${i * 100}" style="${styleOverride}">
+                                    <div class="team-img-wrapper">
+                                        <img src="${item.image}" alt="${item.name}" class="team-img" ${buildImgStyle(item)}>
+                                    </div>
+                                    <h3>${item.name}</h3>
+                                    <p>${item.role}</p>
                                 </div>
-                                <h3>${item.name}</h3>
-                                <p>${item.role}</p>
-                            </div>
-                        `).join('')}
+                            `;
+                        }).join('')}
                     </div>
                     <div class="carousel-nav">
                         <button class="carousel-btn prev" onclick="this.closest('.team-carousel').querySelector('.carousel-track').scrollBy(-300, 0)">←</button>
@@ -1414,15 +1649,28 @@ class Showcase {
             // grid (default)
             contentHtml = `
                 <div class="team-grid ${classes}" data-layout="grid" style="--columns: ${columns}">
-                    ${team.items.map((item, i) => `
-                        <div class="team-card" data-delay="${i * 100}">
+                    ${team.items.map((item, i) => {
+                            let style = '';
+                            if (item.geometry && item.geometry.override) {
+                                style += `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};`;
+                            }
+                            if (item.styleOverride) {
+                                const so = item.styleOverride;
+                                if (so.backgroundColor) style += `background-color: ${so.backgroundColor};`;
+                                if (so.borderColor) style += `border-color: ${so.borderColor};`;
+                                if (so.color) style += `color: ${so.color};`;
+                                if (so.borderRadius !== undefined && so.borderRadius !== -1) style += `border-radius: ${so.borderRadius}px;`;
+                                if (so.fontSizeScale) style += `font-size: ${so.fontSizeScale}em;`;
+                            }
+                        return `
+                                <div class="carousel-slide team-card" data-delay="${i * 100}" style="${style}">
                             <div class="team-img-wrapper">
                                 <img src="${item.image}" alt="${item.name}" class="team-img" ${buildImgStyle(item)}>
                             </div>
                             <h3>${item.name}</h3>
                             <p>${item.role}</p>
                         </div>
-                    `).join('')}
+                    `}).join('')}
                 </div>`;
         }
 
@@ -1541,54 +1789,67 @@ class Showcase {
         this.time += 0.01;
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Get network config from content.theme
         const netConfig = this.content?.theme?.network || TEMPLATES.solar.theme.network;
         const interactionRadius = netConfig.interactionRadius || 150;
         const interactionType = netConfig.interactionType || 'repel';
 
-        // Dynamic physics params
         const repelForce = netConfig.repelForce ?? 40;
         const attractForce = netConfig.attractForce ?? 30;
         const waveAmp = netConfig.waveAmplitude ?? 25;
         const baseSize = netConfig.nodeSize ?? 2;
         const baseGlow = netConfig.nodeGlow ?? 15;
 
-        // Actualizar y dibujar nodos
         this.nodes.forEach((node, index) => {
-            // Flotación base
+            // Base float
             let targetX = node.baseX + Math.sin(this.time + node.col * 0.3) * 3;
             let targetY = node.baseY + Math.cos(this.time + node.row * 0.3) * 3;
 
-            // Interacción con mouse
-            if (this.mouse.x !== null) {
-                const dx = node.baseX - this.mouse.x;
-                const dy = node.baseY - this.mouse.y;
+            // Helper to apply force
+            const applyInteraction = (mx, my, radius, type) => {
+                const dx = node.baseX - mx;
+                const dy = node.baseY - my;
                 const distance = Math.hypot(dx, dy);
 
-                if (distance < interactionRadius) {
-                    const force = (interactionRadius - distance) / interactionRadius;
+                if (distance < radius) {
+                    const force = (radius - distance) / radius;
                     const angle = Math.atan2(dy, dx);
 
-                    switch (interactionType) {
+                    switch (type) {
                         case 'repel':
-                            targetX = node.baseX + Math.cos(angle) * force * repelForce;
-                            targetY = node.baseY + Math.sin(angle) * force * repelForce;
+                            targetX += Math.cos(angle) * force * repelForce;
+                            targetY += Math.sin(angle) * force * repelForce;
                             break;
                         case 'attract':
-                            targetX = node.baseX - Math.cos(angle) * force * attractForce;
-                            targetY = node.baseY - Math.sin(angle) * force * attractForce;
+                            targetX -= Math.cos(angle) * force * attractForce;
+                            targetY -= Math.sin(angle) * force * attractForce;
                             break;
                         case 'wave': {
                             const wave = Math.sin(distance * 0.05 - this.time * 3) * force * waveAmp;
-                            targetX = node.baseX + Math.cos(angle) * wave;
-                            targetY = node.baseY + Math.sin(angle) * wave;
+                            targetX += Math.cos(angle) * wave;
+                            targetY += Math.sin(angle) * wave;
                             break;
                         }
+                        case 'glow':
+                             targetX += Math.cos(angle) * force * 5;
+                             targetY += Math.sin(angle) * force * 5;
+                            break;
                     }
                 }
+            };
+
+            // Mouse
+            if (this.mouse.x !== null) {
+                applyInteraction(this.mouse.x, this.mouse.y, interactionRadius, interactionType);
             }
 
-            // Interpolación suave
+            // Cards/Items
+            if (this.activeInteractions) {
+                this.activeInteractions.forEach(point => {
+                    applyInteraction(point.x, point.y, point.radius || 200, 'repel');
+                });
+            }
+
+            // Interpolation
             node.x += (targetX - node.x) * 0.1;
             node.y += (targetY - node.y) * 0.1;
         });
@@ -1654,6 +1915,7 @@ class Showcase {
         let lineWidth = netConfig.lineWidth || 1;
         const interactionRadius = netConfig.interactionRadius || 150;
 
+        // Mouse Check
         if (this.mouse.x !== null) {
             const midX = (node1.x + node2.x) / 2;
             const midY = (node1.y + node2.y) / 2;
@@ -1661,9 +1923,24 @@ class Showcase {
 
             if (distance < interactionRadius) {
                 const proximity = 1 - (distance / interactionRadius);
-                opacity = baseOpacity + proximity * 0.5;
+                opacity = Math.min(1, baseOpacity + proximity * 0.5);
                 lineWidth = (netConfig.lineWidth || 1) * (1 + proximity * 1.5);
             }
+        }
+
+        // Active Interactions Check
+        if (this.activeInteractions) {
+             this.activeInteractions.forEach(point => {
+                  const midX = (node1.x + node2.x) / 2;
+                  const midY = (node1.y + node2.y) / 2;
+                  const distance = Math.hypot(midX - point.x, midY - point.y);
+
+                  if (distance < (point.radius || 200)) {
+                      const proximity = 1 - (distance / (point.radius || 200));
+                      opacity = Math.min(1, opacity + proximity * 0.5);
+                      lineWidth = Math.max(lineWidth, (netConfig.lineWidth || 1) * (1 + proximity * 1.5));
+                  }
+             });
         }
 
         this.ctx.beginPath();
@@ -2040,6 +2317,239 @@ class Showcase {
         `).forEach(el => {
             observer.observe(el);
         });
+
+        // Initialize Advanced Carousels
+        this.initAdvancedCarousels();
+
+        // Initialize Orbit Layouts
+        this.initOrbitLayouts();
+    }
+
+    initOrbitLayouts() {
+        // Cleanup old instances if they reference removed elements
+        if (this.orbitInstances) {
+            Object.keys(this.orbitInstances).forEach(key => {
+                if (!document.body.contains(this.orbitInstances[key].element)) {
+                    this.orbitInstances[key].destroy();
+                    delete this.orbitInstances[key];
+                }
+            });
+        } else {
+            this.orbitInstances = {};
+        }
+
+        document.querySelectorAll('[data-layout="orbit"]').forEach(container => {
+            const section = container.closest('section');
+            const sectionId = section.id;
+            let sectionKey = '';
+            if(sectionId === 'servicios') sectionKey = 'services';
+            else if(sectionId === 'beneficios') sectionKey = 'benefits';
+            else if(sectionId === 'equipo') sectionKey = 'team';
+
+            if (this.orbitInstances[sectionId]) return;
+
+            const ring = container.querySelector('.orbit-ring');
+            if (!ring) return;
+
+            // State
+            let currentRotation = 0;
+            let targetRotation = 0;
+            let animationFrameId;
+            let scrollListener;
+
+            const update = () => {
+                const config = this.content[sectionKey]?.config?.orbitOptions || { radius: 400, perspective: 1000, tiltX: 0, tiltY: 0, speed: 1 };
+                container.style.perspective = `${config.perspective}px`;
+
+                const items = ring.querySelectorAll('.orbit-item');
+                const count = items.length;
+                const angleStep = 360 / count;
+                const tiltX = config.tiltX || 0;
+                const tiltY = config.tiltY || 0;
+
+                ring.style.transform = `translate3d(-50%, -50%, 0) rotateX(${tiltX}deg) rotateY(${tiltY}deg) rotateZ(${currentRotation}deg)`;
+
+                items.forEach((item, i) => {
+                    // Skip if being interacted with physically
+                    if (item.classList.contains('dragging') || item.dataset.animId) return;
+
+                    const angle = i * angleStep;
+                    item.style.position = 'absolute';
+                    item.style.left = '0';
+                    item.style.top = '0';
+                    item.style.width = '300px';
+                    item.style.height = 'auto';
+                    // Counter-rotate item so it stays upright
+                    item.style.transform = `rotate(${angle}deg) translate(${config.radius}px) rotate(-${angle + currentRotation}deg)`;
+                });
+            };
+
+            // Scroll Logic
+            let lastScrollY = window.scrollY;
+            scrollListener = () => {
+                if (this.isEditMode) return;
+                const rect = container.getBoundingClientRect();
+                if (rect.top < window.innerHeight && rect.bottom > 0) {
+                     const interact = this.content[sectionKey]?.config?.interactions || { scrollMap: 'rotate' };
+                     if (interact.scrollMap === 'rotate') {
+                        const config = this.content[sectionKey]?.config?.orbitOptions || { speed: 1 };
+                        const delta = window.scrollY - lastScrollY;
+                        targetRotation += delta * (config.speed || 0.5);
+                     }
+                }
+                lastScrollY = window.scrollY;
+            };
+            window.addEventListener('scroll', scrollListener);
+
+            // Animation Loop
+            const loop = () => {
+                const diff = targetRotation - currentRotation;
+                if (Math.abs(diff) > 0.1 || Math.abs(currentRotation % 360) > 0.1) {
+                    currentRotation += diff * 0.1;
+                    update(); // Pass currentRotation via closure
+                }
+                animationFrameId = requestAnimationFrame(loop);
+            };
+            loop();
+
+            this.orbitInstances[sectionId] = {
+                element: container,
+                update: update,
+                destroy: () => {
+                    window.removeEventListener('scroll', scrollListener);
+                    cancelAnimationFrame(animationFrameId);
+                }
+            };
+
+            // Initial call
+            update();
+        });
+    }
+
+    initAdvancedCarousels() {
+        document.querySelectorAll('[data-layout="carousel"]').forEach(container => {
+            // Find section config
+            const sectionId = container.closest('section').id;
+            let sectionKey = '';
+            if(sectionId === 'servicios') sectionKey = 'services';
+            else if(sectionId === 'beneficios') sectionKey = 'benefits';
+            else if(sectionId === 'equipo') sectionKey = 'team';
+
+            const config = this.content[sectionKey]?.config?.carouselOptions || {
+                activeScale: 1.1,
+                inactiveOpacity: 0.7,
+                activeShadow: 'soft',
+                scrollSnap: 'center',
+                autoPlay: 0
+            };
+
+            const track = container.querySelector('.carousel-track');
+            if (!track) return;
+
+            // Apply Snap Alignment
+            track.style.scrollSnapType = 'x mandatory';
+            track.querySelectorAll('.carousel-slide').forEach(slide => {
+                slide.style.scrollSnapAlign = config.scrollSnap || 'center';
+                slide.style.transition = 'transform 0.4s ease, opacity 0.4s ease, box-shadow 0.4s ease';
+            });
+
+            // Intersection Observer for Active State
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const slide = entry.target;
+                    // Calculate center distance for more precise "analog" feel?
+                    // IntersectionRatio is simpler.
+                    // If ratio > 0.6 we consider it "active" candidate
+                    if (entry.intersectionRatio > 0.6) {
+                        slide.classList.add('carousel-active');
+                        this.updateSlideStyle(slide, true, config);
+                    } else {
+                        slide.classList.remove('carousel-active');
+                        this.updateSlideStyle(slide, false, config);
+                    }
+                });
+            }, {
+                root: track,
+                threshold: [0.6]
+            });
+
+            track.querySelectorAll('.carousel-slide').forEach(slide => observer.observe(slide));
+
+            // Initial state set
+            track.querySelectorAll('.carousel-slide').forEach(slide => {
+                this.updateSlideStyle(slide, slide.classList.contains('carousel-active'), config);
+            });
+
+            // Autoplay
+            if (config.autoPlay > 0) {
+                let interval;
+                const startPlay = () => {
+                    if (interval) clearInterval(interval);
+                    interval = setInterval(() => {
+                        if (this.isEditMode) return;
+                        track.scrollBy({ left: 300, behavior: 'smooth' });
+                        // Loop check: if at end, scroll to start?
+                        // Simplified: just scroll.
+                        if (track.scrollLeft + track.clientWidth >= track.scrollWidth - 50) {
+                            track.scrollTo({ left: 0, behavior: 'smooth' });
+                        }
+                    }, config.autoPlay);
+                };
+
+                startPlay();
+                track.addEventListener('mouseenter', () => clearInterval(interval));
+                track.addEventListener('mouseleave', startPlay);
+                track.addEventListener('touchstart', () => clearInterval(interval)); // Mobile stop
+            }
+        });
+    }
+
+    updateSlideStyle(slide, isActive, config) {
+        if (this.isEditMode) {
+            slide.style.transform = '';
+            slide.style.opacity = '';
+            slide.style.boxShadow = '';
+            return;
+        }
+
+        // Merge with existing style (e.g. overrides)
+        // This is tricky because we are setting properties that overrides also set.
+        // But overrides are inline `style="..."` attribute.
+        // We should try to respect them or assume carousel logic wins for these specific props unless user set them?
+        // Let's modify directly properties, assuming no conflict or carousel wins active state.
+
+        // However, if the item has geometry override (transform translate), we shouldn't overwrite `transform`.
+        // `slide.style.transform` overwrites everything.
+        // We need to APPEND to existing transform if present.
+
+        // Parse existing transform if it comes from geometry override
+        // Actually, geometry override sets inline style.
+        // If we change it here, we might lose position.
+        // BUT: Carousel layout usually ignores geometry overrides except active/inactive scaling.
+        // Wait, "Hybrid Layout" in Carousel means item has specific offset.
+        // If we apply active scale, we must combine: `scale(1.1) translate(x,y)`.
+
+        // Simple approach: Check if style has translate.
+        const currentTransform = slide.style.transform;
+        const translateMatch = currentTransform.match(/translate\([^)]+\)/);
+        const translateStr = translateMatch ? translateMatch[0] : '';
+
+        const scale = isActive ? (config.activeScale || 1.1) : 1;
+        const opacity = isActive ? 1 : (config.inactiveOpacity ?? 0.7);
+
+        // Shadow map
+        const shadows = {
+            'none': 'none',
+            'soft': '0 10px 30px rgba(0,0,0,0.15)',
+            'strong': '0 20px 50px rgba(0,0,0,0.4)',
+            'glow': `0 0 20px var(--primary-glow, rgba(245,158,11,0.5))`
+        };
+        const shadow = isActive ? (shadows[config.activeShadow] || shadows['soft']) : 'none';
+
+        slide.style.transform = `${translateStr} scale(${scale})`;
+        slide.style.opacity = opacity;
+        slide.style.boxShadow = shadow;
+        slide.style.zIndex = isActive ? 10 : 1;
     }
 }
 

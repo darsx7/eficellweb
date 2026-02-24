@@ -877,11 +877,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const card = document.createElement('div');
         card.className = 'item-card';
 
-        // If in freeform mode, show geometry controls
-        if (section.config?.layout === 'freeform') {
+        // Geometry Controls (Freeform & Hybrid)
+        // Show if layout is freeform OR if manual override exists
+        const isFreeform = section.config?.layout === 'freeform';
+        const hasOverride = item.geometry && item.geometry.override;
+
+        if (isFreeform || hasOverride) {
             const geoHeader = document.createElement('div');
             geoHeader.className = 'geo-controls';
-            geoHeader.style.cssText = 'display:flex; gap:0.5rem; margin-bottom:0.5rem; background:var(--bg-dark); padding:0.3rem; border-radius:4px; font-size:0.7rem;';
+            geoHeader.style.cssText = 'display:flex; gap:0.5rem; margin-bottom:0.5rem; background:var(--bg-dark); padding:0.3rem; border-radius:4px; font-size:0.7rem; flex-wrap:wrap;';
 
             const geo = item.geometry || { x: 0, y: 0, w: 200, h: 'auto', z: 1, r: 0 };
 
@@ -962,6 +966,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
             geoHeader.appendChild(zWrap);
 
+            // Reset Button for Hybrid Mode
+            if (hasOverride && !isFreeform) {
+                const resetBtn = document.createElement('button');
+                resetBtn.textContent = '↺ Reset Posición';
+                resetBtn.style.cssText = 'width:100%; margin-top:4px; border:1px solid var(--border); background:rgba(255,50,50,0.2); color:#ffcccc; cursor:pointer; font-size:0.7rem; border-radius:3px;';
+                resetBtn.onclick = () => {
+                    if (confirm('¿Restablecer posición automática para este elemento?')) {
+                        delete item.geometry.override;
+                        // Also reset x/y to clean up
+                        item.geometry.x = 0;
+                        item.geometry.y = 0;
+                        updatePreview();
+                        renderSidebar();
+                        pushHistory();
+                    }
+                };
+                geoHeader.appendChild(resetBtn);
+            }
+
             card.appendChild(geoHeader);
         }
 
@@ -1038,6 +1061,37 @@ document.addEventListener('DOMContentLoaded', () => {
             if (item.description !== undefined) item.description = v;
             if (item.role !== undefined) item.role = v;
         }));
+
+        // Individual Style Override Button
+        const styleBtn = document.createElement('button');
+        styleBtn.textContent = '🎨 Estilo Individual';
+        styleBtn.className = 'btn-small';
+        styleBtn.style.cssText = 'width:100%; margin-bottom:0.5rem; background:var(--surface); border:1px solid var(--border); color:var(--text-secondary); cursor:pointer; font-size:0.8rem; padding:4px;';
+        styleBtn.onclick = () => {
+            const stylePanel = card.querySelector('.style-override-panel');
+            stylePanel.style.display = stylePanel.style.display === 'none' ? 'block' : 'none';
+        };
+        card.appendChild(styleBtn);
+
+        // Style Override Panel (Hidden by default)
+        const stylePanel = document.createElement('div');
+        stylePanel.className = 'style-override-panel';
+        stylePanel.style.cssText = 'display:none; background:rgba(0,0,0,0.2); padding:0.5rem; margin-bottom:0.5rem; border-radius:4px; border-left:2px solid var(--primary);';
+
+        if (!item.styleOverride) item.styleOverride = {};
+        const so = item.styleOverride;
+
+        stylePanel.appendChild(createColorInput('Fondo', so.backgroundColor || '', (v) => { so.backgroundColor = v; }));
+        stylePanel.appendChild(createColorInput('Borde', so.borderColor || '', (v) => { so.borderColor = v; }));
+        stylePanel.appendChild(createColorInput('Texto', so.color || '', (v) => { so.color = v; }));
+
+        // Font size scale
+        stylePanel.appendChild(buildSlider('Escala Fuente', (so.fontSizeScale || 1) * 100, 50, 200, 10, '%', (v) => { so.fontSizeScale = v / 100; }));
+
+        // Border Radius
+        stylePanel.appendChild(buildSlider('Redondeo', so.borderRadius ?? -1, -1, 50, 1, 'px', (v) => { so.borderRadius = v === -1 ? undefined : v; }));
+
+        card.appendChild(stylePanel);
 
         // Image preview + image controls (for team)
         if (item.image !== undefined) {
@@ -1203,7 +1257,7 @@ document.addEventListener('DOMContentLoaded', () => {
         configRow.className = 'config-row';
 
         // --- Layout ---
-        configRow.appendChild(createSelect('Layout', ['grid', 'carousel', 'list', 'featured', 'freeform'], section.config?.layout || 'grid', (val) => {
+        configRow.appendChild(createSelect('Layout', ['grid', 'carousel', 'list', 'featured', 'freeform', 'orbit'], section.config?.layout || 'grid', (val) => {
             section.config.layout = val;
             updatePreview();
             renderSidebar(); // Re-render to show/hide geometry controls based on layout
@@ -1323,6 +1377,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="pill-duration">${dur}ms</span>
                 ${overflowIcon ? `<span class="pill-overflow">${overflowIcon}</span>` : ''}
             `;
+
+            // Config Button (New)
+            const configBtn = document.createElement('button');
+            configBtn.type = 'button';
+            configBtn.className = 'pill-config';
+            configBtn.textContent = '⚙️';
+            configBtn.style.marginRight = '4px';
+            configBtn.onclick = (e) => {
+                e.stopPropagation();
+                // Toggle config panel for this effect
+                let panel = pill.nextElementSibling;
+                if (panel && panel.classList.contains('effect-config-panel')) {
+                    panel.remove();
+                } else {
+                    panel = document.createElement('div');
+                    panel.className = 'effect-config-panel';
+                    panel.style.cssText = 'background:rgba(0,0,0,0.3); padding:8px; margin-bottom:8px; border-radius:4px; font-size:0.8rem;';
+
+                    // Specific controls based on actions
+                    if (fx.actions.includes('glow')) {
+                        panel.appendChild(createColorInput('Color Brillo', fx.glowColor || '', (v) => { fx.glowColor = v; }));
+                    }
+                    if (fx.actions.includes('shake')) {
+                        panel.appendChild(buildSlider('Eje X', fx.shakeX ?? 8, 0, 50, 1, 'px', (v) => { fx.shakeX = v; }));
+                        panel.appendChild(buildSlider('Rotación', fx.shakeRot ?? 1, 0, 15, 0.5, 'deg', (v) => { fx.shakeRot = v; }));
+                    }
+                    if (fx.actions.includes('pulse')) {
+                        panel.appendChild(buildSlider('Escala Pulso', (fx.pulseScale ?? 1.04) * 100, 100, 150, 1, '%', (v) => { fx.pulseScale = v / 100; }));
+                    }
+
+                    // General overrides
+                    panel.appendChild(buildSlider('Intensidad', fx.intensity ?? 50, 0, 100, 5, '%', (v) => { fx.intensity = v; }));
+                    panel.appendChild(buildSlider('Duración', fx.duration || 350, 100, 3000, 50, 'ms', (v) => { fx.duration = v; }));
+
+                    pill.after(panel);
+                }
+            };
+            pill.appendChild(configBtn);
+
             const removeBtn = document.createElement('button');
             removeBtn.type = 'button';
             removeBtn.className = 'pill-remove';
@@ -1436,6 +1529,109 @@ document.addEventListener('DOMContentLoaded', () => {
         fxDiv.appendChild(builderRow);
 
         configRow.appendChild(fxDiv);
+
+        // --- Carousel Advanced Config ---
+        if (section.config?.layout === 'carousel') {
+            const carouselDiv = document.createElement('div');
+            carouselDiv.className = 'carousel-config';
+            carouselDiv.style.cssText = 'margin-top: 1rem; padding: 0.5rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px;';
+            carouselDiv.innerHTML = '<label class="config-label">🎡 Carrusel Avanzado</label>';
+
+            if (!section.config.carouselOptions) {
+                section.config.carouselOptions = {
+                    activeScale: 1.1,
+                    inactiveOpacity: 0.7,
+                    activeShadow: 'soft',
+                    scrollSnap: 'center',
+                    autoPlay: 0
+                };
+            }
+            const co = section.config.carouselOptions;
+
+            // Active Scale
+            carouselDiv.appendChild(buildSlider('Escala Activo', (co.activeScale || 1) * 100, 100, 150, 5, '%', (v) => { co.activeScale = v / 100; }));
+
+            // Inactive Opacity
+            carouselDiv.appendChild(buildSlider('Opacidad Inactivo', (co.inactiveOpacity || 1) * 100, 10, 100, 10, '%', (v) => { co.inactiveOpacity = v / 100; }));
+
+            // Active Shadow
+            carouselDiv.appendChild(createSelect('Sombra Activo', ['none', 'soft', 'strong', 'glow'], co.activeShadow || 'soft', (val) => {
+                co.activeShadow = val;
+                updatePreview();
+            }));
+
+            // Scroll Snap
+            carouselDiv.appendChild(createSelect('Alineación (Snap)', ['center', 'start'], co.scrollSnap || 'center', (val) => {
+                co.scrollSnap = val;
+                updatePreview();
+            }));
+
+            // Autoplay
+            carouselDiv.appendChild(buildSlider('Autoplay (ms, 0=off)', co.autoPlay || 0, 0, 5000, 500, 'ms', (v) => { co.autoPlay = v; }));
+
+            configRow.appendChild(carouselDiv);
+        }
+
+        // --- Orbit / Physics Interaction Config ---
+        if (section.config?.layout === 'orbit') {
+            const interactDiv = document.createElement('div');
+            interactDiv.className = 'interact-config';
+            interactDiv.style.cssText = 'margin-top: 1rem; padding: 0.5rem; background: rgba(50,255,100,0.05); border: 1px solid var(--border); border-radius: 8px;';
+            interactDiv.innerHTML = '<label class="config-label">🪐 Física Orbital</label>';
+
+            if (!section.config.orbitOptions) {
+                section.config.orbitOptions = { radius: 400, perspective: 1000, tiltX: 10, tiltY: 0, speed: 1 };
+            }
+            const oo = section.config.orbitOptions;
+
+            // Orbit Params
+            interactDiv.appendChild(buildSlider('Radio (px)', oo.radius || 400, 200, 1000, 50, 'px', (v) => { oo.radius = v; }));
+            interactDiv.appendChild(buildSlider('Perspectiva', oo.perspective || 1000, 500, 2000, 100, 'px', (v) => { oo.perspective = v; }));
+            interactDiv.appendChild(buildSlider('Inclinación X', oo.tiltX || 0, -90, 90, 5, '°', (v) => { oo.tiltX = v; }));
+            interactDiv.appendChild(buildSlider('Inclinación Y', oo.tiltY || 0, -90, 90, 5, '°', (v) => { oo.tiltY = v; }));
+            interactDiv.appendChild(buildSlider('Velocidad Base', oo.speed || 1, 0, 5, 0.1, 'x', (v) => { oo.speed = v; }));
+
+            // Interactions Map
+            if (!section.config.interactions) {
+                section.config.interactions = { scrollMap: 'rotate', dragPhysics: true, networkLink: true };
+            }
+            const int = section.config.interactions;
+
+            const intLabel = document.createElement('label');
+            intLabel.className = 'config-label';
+            intLabel.style.fontSize = '0.75rem';
+            intLabel.style.marginTop = '0.5rem';
+            intLabel.textContent = '🕹️ Gestos';
+            interactDiv.appendChild(intLabel);
+
+            interactDiv.appendChild(createSelect('Scroll Mapeo', ['none', 'rotate', 'zoom', 'tilt'], int.scrollMap || 'rotate', (val) => {
+                int.scrollMap = val;
+                updatePreview();
+            }));
+
+            // Checkboxes
+            const physLabel = document.createElement('label');
+            physLabel.className = 'action-checkbox';
+            const physCb = document.createElement('input');
+            physCb.type = 'checkbox';
+            physCb.checked = int.dragPhysics !== false;
+            physCb.onchange = () => { int.dragPhysics = physCb.checked; updatePreview(); };
+            physLabel.appendChild(physCb);
+            physLabel.appendChild(document.createTextNode(' Lanzar con Inercia (Throw)'));
+            interactDiv.appendChild(physLabel);
+
+            const netLabel = document.createElement('label');
+            netLabel.className = 'action-checkbox';
+            const netCb = document.createElement('input');
+            netCb.type = 'checkbox';
+            netCb.checked = int.networkLink !== false;
+            netCb.onchange = () => { int.networkLink = netCb.checked; updatePreview(); };
+            netLabel.appendChild(netCb);
+            netLabel.appendChild(document.createTextNode(' Vincular a Red de Fondo'));
+            interactDiv.appendChild(netLabel);
+
+            configRow.appendChild(interactDiv);
+        }
 
         // --- Expanded Card Customization ---
         const expandDiv = document.createElement('div');
