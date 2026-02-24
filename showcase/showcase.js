@@ -1461,6 +1461,13 @@ class Showcase {
         const interactionRadius = netConfig.interactionRadius || 150;
         const interactionType = netConfig.interactionType || 'repel';
 
+        // Dynamic physics params
+        const repelForce = netConfig.repelForce ?? 40;
+        const attractForce = netConfig.attractForce ?? 30;
+        const waveAmp = netConfig.waveAmplitude ?? 25;
+        const baseSize = netConfig.nodeSize ?? 2;
+        const baseGlow = netConfig.nodeGlow ?? 15;
+
         // Actualizar y dibujar nodos
         this.nodes.forEach((node, index) => {
             // Flotación base
@@ -1479,15 +1486,15 @@ class Showcase {
 
                     switch (interactionType) {
                         case 'repel':
-                            targetX = node.baseX + Math.cos(angle) * force * 40;
-                            targetY = node.baseY + Math.sin(angle) * force * 40;
+                            targetX = node.baseX + Math.cos(angle) * force * repelForce;
+                            targetY = node.baseY + Math.sin(angle) * force * repelForce;
                             break;
                         case 'attract':
-                            targetX = node.baseX - Math.cos(angle) * force * 30;
-                            targetY = node.baseY - Math.sin(angle) * force * 30;
+                            targetX = node.baseX - Math.cos(angle) * force * attractForce;
+                            targetY = node.baseY - Math.sin(angle) * force * attractForce;
                             break;
                         case 'wave': {
-                            const wave = Math.sin(distance * 0.05 - this.time * 3) * force * 25;
+                            const wave = Math.sin(distance * 0.05 - this.time * 3) * force * waveAmp;
                             targetX = node.baseX + Math.cos(angle) * wave;
                             targetY = node.baseY + Math.sin(angle) * wave;
                             break;
@@ -1521,7 +1528,7 @@ class Showcase {
 
         // Dibujar nodos
         this.nodes.forEach(node => {
-            let size = 2;
+            let size = baseSize;
             let glowSize = 0;
 
             if (this.mouse.x !== null) {
@@ -1529,10 +1536,10 @@ class Showcase {
                 const dy = node.y - this.mouse.y;
                 const distance = Math.hypot(dx, dy);
 
-                if (distance < 150) {
-                    const proximity = 1 - (distance / 150);
-                    size = 2 + proximity * 3;
-                    glowSize = proximity * 15;
+                if (distance < interactionRadius) {
+                    const proximity = 1 - (distance / interactionRadius);
+                    size = baseSize + proximity * 3;
+                    glowSize = proximity * baseGlow;
                 }
             }
 
@@ -1559,17 +1566,18 @@ class Showcase {
 
     drawLine(node1, node2, netConfig, baseOpacity = 0.5) {
         let opacity = baseOpacity;
-        let lineWidth = 1;
+        let lineWidth = netConfig.lineWidth || 1;
+        const interactionRadius = netConfig.interactionRadius || 150;
 
         if (this.mouse.x !== null) {
             const midX = (node1.x + node2.x) / 2;
             const midY = (node1.y + node2.y) / 2;
             const distance = Math.hypot(midX - this.mouse.x, midY - this.mouse.y);
 
-            if (distance < 150) {
-                const proximity = 1 - (distance / 150);
+            if (distance < interactionRadius) {
+                const proximity = 1 - (distance / interactionRadius);
                 opacity = baseOpacity + proximity * 0.5;
-                lineWidth = 1 + proximity * 1.5;
+                lineWidth = (netConfig.lineWidth || 1) * (1 + proximity * 1.5);
             }
         }
 
@@ -1690,8 +1698,12 @@ class Showcase {
         const rect = element.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
-        // Use theme colors
+        // Use theme colors & animations config
         const theme = this.content?.theme || TEMPLATES.solar.theme;
+        const anims = theme.styles?.animations || {};
+
+        const burstDuration = anims.burstDuration || 500;
+        const burstDistBase = anims.burstDistance || 50;
 
         for (let i = 0; i < 8; i++) {
             const particle = document.createElement('div');
@@ -1706,7 +1718,7 @@ class Showcase {
             document.body.appendChild(particle);
 
             const angle = (Math.PI * 2 / 8) * i;
-            const distance = 50 + Math.random() * 30;
+            const distance = burstDistBase + Math.random() * (burstDistBase * 0.6);
             const destX = Math.cos(angle) * distance;
             const destY = Math.sin(angle) * distance;
 
@@ -1714,7 +1726,7 @@ class Showcase {
                 { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
                 { transform: `translate(calc(-50% + ${destX}px), calc(-50% + ${destY}px)) scale(0)`, opacity: 0 }
             ], {
-                duration: 500,
+                duration: burstDuration,
                 easing: 'cubic-bezier(0.16, 1, 0.3, 1)'
             }).onfinish = () => particle.remove();
         }
@@ -1841,17 +1853,31 @@ class Showcase {
     }
 
     setupScrollAnimations() {
-        const observer = new IntersectionObserver((entries) => {
+        // Read config from content.json if available
+        const anims = this.content?.theme?.styles?.animations || {};
+        const threshold = anims.scrollThreshold || 0.1;
+
+        // Note: IntersectionObserver doesn't support changing threshold dynamically on existing observer easily.
+        // We recreate it if we need to, but for now we'll stick to one creation in init() or rebuild page.
+        // Ideally we should disconnect old observer if we are rebuilding.
+        if(this.scrollObserver) this.scrollObserver.disconnect();
+
+        this.scrollObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    const delay = Number.parseInt(entry.target.dataset.delay, 10) || 0;
+                    let delay = Number.parseInt(entry.target.dataset.delay, 10) || 0;
+                    // Add global base delay if configured
+                    if(anims.scrollDelayBase) delay += anims.scrollDelayBase;
+
                     setTimeout(() => {
                         entry.target.classList.add('animate-in');
                     }, delay);
-                    observer.unobserve(entry.target);
+                    this.scrollObserver.unobserve(entry.target);
                 }
             });
-        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+        }, { threshold: threshold, rootMargin: '0px 0px -50px 0px' });
+
+        const observer = this.scrollObserver;
 
         // Observar elementos - incluye todos los layouts
         document.querySelectorAll(`

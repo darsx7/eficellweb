@@ -2,12 +2,17 @@
    EFFECTS SYSTEM — Multi-Trigger Composable
    ============================================ */
 
-/* CSS custom property defaults */
+/* CSS custom property defaults - Now fully dynamic via JS */
 :root {
     --effect-scale: 1.05;
     --effect-lift: -15px;
     --effect-glow-spread: 20px;
     --effect-transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Animation base vars */
+    --anim-pulse-scale: 1.04;
+    --anim-shake-dist: 8px;
+    --anim-shake-rot: 1deg;
 }
 
 /* Base transition for all interactive cards */
@@ -156,7 +161,7 @@
     }
 
     50% {
-        transform: scale(1.04);
+        transform: scale(var(--anim-pulse-scale, 1.04));
     }
 }
 
@@ -281,19 +286,19 @@
     }
 
     20% {
-        transform: translateX(-8px) rotate(-1deg);
+        transform: translateX(calc(var(--anim-shake-dist, 8px) * -1)) rotate(calc(var(--anim-shake-rot, 1deg) * -1));
     }
 
     40% {
-        transform: translateX(8px) rotate(1deg);
+        transform: translateX(var(--anim-shake-dist, 8px)) rotate(var(--anim-shake-rot, 1deg));
     }
 
     60% {
-        transform: translateX(-5px) rotate(-0.5deg);
+        transform: translateX(calc(var(--anim-shake-dist, 8px) * -0.6)) rotate(calc(var(--anim-shake-rot, 1deg) * -0.5));
     }
 
     80% {
-        transform: translateX(5px) rotate(0.5deg);
+        transform: translateX(calc(var(--anim-shake-dist, 8px) * 0.6)) rotate(calc(var(--anim-shake-rot, 1deg) * 0.5));
     }
 }
 

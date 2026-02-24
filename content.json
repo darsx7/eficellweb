@@ -30,7 +30,13 @@
             "glowColor": "#fbbf24",
             "gridDensity": 40,
             "interactionRadius": 150,
-            "interactionType": "repel"
+            "interactionType": "repel",
+            "repelForce": 40,
+            "attractForce": 30,
+            "waveAmplitude": 25,
+            "nodeSize": 2,
+            "nodeGlow": 15,
+            "lineWidth": 1
         },
         "styles": {
             "cards": {
@@ -61,7 +67,14 @@
                 "navbarOpacity": 0.8,
                 "containerWidth": 1200
             },
-            "animations": { "transitionSpeed": 0.4, "hoverLift": 10 },
+            "animations": {
+                "transitionSpeed": 0.4,
+                "hoverLift": 10,
+                "burstDuration": 500,
+                "burstDistance": 50,
+                "scrollThreshold": 0.1,
+                "scrollDelayBase": 100
+            },
             "effects": { "glowIntensity": 0.4, "borderOpacity": 0.08 }
         }
     },

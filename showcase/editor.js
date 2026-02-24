@@ -582,6 +582,19 @@ document.addEventListener('DOMContentLoaded', () => {
         body.appendChild(buildSlider('Densidad', net.gridDensity || 40, 20, 100, 5, 'px', (v) => { net.gridDensity = v; }));
         body.appendChild(buildSlider('Radio Interacción', net.interactionRadius || 150, 50, 400, 10, 'px', (v) => { net.interactionRadius = v; }));
 
+        // Granular Network Physics
+        const physicsLabel = document.createElement('label');
+        physicsLabel.className = 'config-label';
+        physicsLabel.style.fontSize = '0.75rem';
+        physicsLabel.textContent = '⚛️ Física de Partículas';
+        body.appendChild(physicsLabel);
+
+        body.appendChild(buildSlider('Fuerza Repulsión', net.repelForce || 40, 0, 100, 5, '', (v) => { net.repelForce = v; }));
+        body.appendChild(buildSlider('Fuerza Atracción', net.attractForce || 30, 0, 100, 5, '', (v) => { net.attractForce = v; }));
+        body.appendChild(buildSlider('Amplitud Onda', net.waveAmplitude || 25, 0, 100, 5, '', (v) => { net.waveAmplitude = v; }));
+        body.appendChild(buildSlider('Tamaño Nodo', net.nodeSize || 2, 0.5, 10, 0.5, 'px', (v) => { net.nodeSize = v; }));
+        body.appendChild(buildSlider('Grosor Línea', net.lineWidth || 1, 0.1, 5, 0.1, 'px', (v) => { net.lineWidth = v; }));
+
         // --- Styles Detail ---
         const styleLabel = document.createElement('label');
         styleLabel.className = 'config-label';
@@ -606,6 +619,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if(!theme.styles.effects) theme.styles.effects = {};
             theme.styles.effects.glowIntensity = v / 100;
         }));
+
+        // --- Animations Detail ---
+        const animLabel = document.createElement('label');
+        animLabel.className = 'config-label';
+        animLabel.textContent = '🎬 Animaciones Globales';
+        body.appendChild(animLabel);
+
+        if (!theme.styles.animations) theme.styles.animations = {};
+        const anims = theme.styles.animations;
+
+        body.appendChild(buildSlider('Velocidad Transición', (anims.transitionSpeed ?? 0.4) * 1000, 100, 2000, 50, 'ms', (v) => { anims.transitionSpeed = v / 1000; }));
+        body.appendChild(buildSlider('Elevación Hover', anims.hoverLift ?? 10, 0, 50, 1, 'px', (v) => { anims.hoverLift = v; }));
+
+        // Granular Animation Settings
+        body.appendChild(buildSlider('Duración Explosión', anims.burstDuration || 500, 100, 2000, 50, 'ms', (v) => { anims.burstDuration = v; }));
+        body.appendChild(buildSlider('Distancia Explosión', anims.burstDistance || 50, 10, 200, 5, 'px', (v) => { anims.burstDistance = v; }));
+        body.appendChild(buildSlider('Scroll Delay Base', anims.scrollDelayBase || 100, 0, 500, 10, 'ms', (v) => { anims.scrollDelayBase = v; }));
     }
 
     // ============================================
