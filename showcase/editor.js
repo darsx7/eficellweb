@@ -8,6 +8,42 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentUploadCallback = null;
     let history = [];
     let historyIndex = -1;
+    let isEditMode = false;
+
+    // --- Create Toggle Button in Header ---
+    const headerEl = document.querySelector('header');
+    if (headerEl) {
+        const toggleBtn = document.createElement('button');
+        toggleBtn.id = 'toggleEditMode';
+        toggleBtn.className = 'btn-toggle-edit';
+        toggleBtn.textContent = '👁️ Vista Previa';
+        toggleBtn.style.cssText = `
+            margin-left: 1rem;
+            padding: 0.5rem 1rem;
+            background: #334155;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            font-weight: 500;
+        `;
+        toggleBtn.onclick = () => {
+            isEditMode = !isEditMode;
+            toggleBtn.textContent = isEditMode ? '✏️ Editando' : '👁️ Vista Previa';
+            toggleBtn.style.background = isEditMode ? '#f59e0b' : '#334155';
+            toggleBtn.style.color = isEditMode ? '#000' : '#fff';
+
+            // Send message to showcase
+            if (previewFrame.contentWindow) {
+                previewFrame.contentWindow.postMessage({
+                    type: 'enable-edit-mode',
+                    enabled: isEditMode
+                }, globalThis.location.origin);
+            }
+        };
+        // Insert before save button
+        headerEl.insertBefore(toggleBtn, saveBtn);
+    }
 
     // ============================================
     // SECTION ICONS & CONFIG
