@@ -871,7 +871,60 @@ document.addEventListener('DOMContentLoaded', () => {
             geoHeader.appendChild(createTinyInput('Y', geo.y, 'y'));
             geoHeader.appendChild(createTinyInput('W', geo.w, 'w'));
             geoHeader.appendChild(createTinyInput('R°', geo.r || 0, 'r'));
-            geoHeader.appendChild(createTinyInput('Z', geo.z, 'z'));
+
+            // Z-Index Controls (New)
+            const zWrap = document.createElement('div');
+            zWrap.style.cssText = 'flex:1; display:flex; flex-direction:column;';
+            zWrap.innerHTML = `<span style="color:var(--text-dim);">Z</span>`;
+            const zControls = document.createElement('div');
+            zControls.style.display = 'flex';
+
+            const zInput = document.createElement('input');
+            zInput.type = 'number';
+            zInput.value = geo.z || 1;
+            zInput.style.cssText = 'width:30px; background:transparent; border:none; color:var(--primary); font-weight:bold; border-bottom:1px solid var(--border); margin-right:4px;';
+            zInput.onchange = (e) => {
+                if(!item.geometry) item.geometry = { ...geo };
+                item.geometry.z = parseInt(e.target.value) || 1;
+                updatePreview();
+            };
+
+            const btnFront = document.createElement('button');
+            btnFront.textContent = '▲';
+            btnFront.title = 'Traer al frente';
+            btnFront.style.cssText = 'border:none; background:rgba(255,255,255,0.1); color:#fff; cursor:pointer; font-size:0.6rem; padding:0 2px;';
+            btnFront.onclick = () => {
+                // Find max Z in this section
+                let maxZ = 0;
+                section.items.forEach(it => { if(it.geometry && it.geometry.z > maxZ) maxZ = it.geometry.z; });
+                if(!item.geometry) item.geometry = { ...geo };
+                item.geometry.z = maxZ + 1;
+                zInput.value = item.geometry.z;
+                updatePreview();
+                pushHistory();
+            };
+
+            const btnBack = document.createElement('button');
+            btnBack.textContent = '▼';
+            btnBack.title = 'Enviar al fondo';
+            btnBack.style.cssText = 'border:none; background:rgba(255,255,255,0.1); color:#fff; cursor:pointer; font-size:0.6rem; padding:0 2px; margin-left:2px;';
+            btnBack.onclick = () => {
+                // Find min Z in this section
+                let minZ = 1000;
+                section.items.forEach(it => { if(it.geometry && it.geometry.z < minZ) minZ = it.geometry.z; });
+                if(!item.geometry) item.geometry = { ...geo };
+                item.geometry.z = Math.max(0, minZ - 1);
+                zInput.value = item.geometry.z;
+                updatePreview();
+                pushHistory();
+            };
+
+            zControls.appendChild(zInput);
+            zControls.appendChild(btnFront);
+            zControls.appendChild(btnBack);
+            zWrap.appendChild(zControls);
+
+            geoHeader.appendChild(zWrap);
 
             card.appendChild(geoHeader);
         }
@@ -1114,9 +1167,10 @@ document.addEventListener('DOMContentLoaded', () => {
         configRow.className = 'config-row';
 
         // --- Layout ---
-        configRow.appendChild(createSelect('Layout', ['grid', 'carousel', 'list', 'featured'], section.config?.layout || 'grid', (val) => {
+        configRow.appendChild(createSelect('Layout', ['grid', 'carousel', 'list', 'featured', 'freeform'], section.config?.layout || 'grid', (val) => {
             section.config.layout = val;
             updatePreview();
+            renderSidebar(); // Re-render to show/hide geometry controls based on layout
         }));
 
         // --- Columns ---
@@ -1446,6 +1500,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function createSectionEl(key, title, renderFn, startActive) {
         const sectionEl = document.createElement('div');
         sectionEl.className = 'section-item' + (startActive ? ' active' : '');
+        sectionEl.dataset.key = key;
 
         const header = document.createElement('div');
         header.className = 'section-header';
@@ -1472,11 +1527,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     function renderSidebar() {
         const scrollPos = sectionsList.scrollTop;
-        // Track which sections were active
+        // Track which sections were active by their data-key attribute
         const activeKeys = new Set();
         sectionsList.querySelectorAll('.section-item.active').forEach(el => {
-            const title = el.querySelector('.section-title');
-            if (title) activeKeys.add(title.textContent.trim());
+            if (el.dataset.key) activeKeys.add(el.dataset.key);
         });
 
         sectionsList.innerHTML = '';
@@ -1484,7 +1538,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. Templates
         sectionsList.appendChild(createSectionEl('templates', 'Templates', (body) => {
             renderTemplatesSection(body);
-        }, activeKeys.size === 0 || activeKeys.has(SECTION_ICONS.templates + '\n                Templates')));
+        }, activeKeys.size === 0 || activeKeys.has('templates')));
 
         // 2. Branding
         if (!content.branding) {
@@ -1492,7 +1546,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         sectionsList.appendChild(createSectionEl('branding', 'Branding', (body) => {
             renderBrandingSection(content.branding, body);
-        }));
+        }, activeKeys.has('branding')));
 
         // 3. Theme & Network (Replaces Styles)
         if (!content.theme) {
@@ -1500,13 +1554,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         sectionsList.appendChild(createSectionEl('styles', 'Tema y Red', (body) => {
             renderThemeSection(content.theme, body);
-        }));
+        }, activeKeys.has('styles')));
 
         // 4. Nav
         if (content.nav) {
             sectionsList.appendChild(createSectionEl('nav', 'Navegación', (body) => {
                 renderNavSection(content.nav, body);
-            }));
+            }, activeKeys.has('nav')));
         }
 
         // 5. Hero
@@ -1514,7 +1568,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!content.hero.config) content.hero.config = {};
             sectionsList.appendChild(createSectionEl('hero', 'Hero', (body) => {
                 renderHeroSection(content.hero, body);
-            }));
+            }, activeKeys.has('hero')));
         }
 
         // 6. Services
@@ -1525,7 +1579,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (content.services.items && Array.isArray(content.services.items)) {
                     renderItemsSection('services', content.services, body);
                 }
-            }));
+            }, activeKeys.has('services')));
         }
 
         // 7. Benefits
@@ -1536,7 +1590,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (content.benefits.items && Array.isArray(content.benefits.items)) {
                     renderItemsSection('benefits', content.benefits, body);
                 }
-            }));
+            }, activeKeys.has('benefits')));
         }
 
         // 8. Team
@@ -1547,7 +1601,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (content.team.items && Array.isArray(content.team.items)) {
                     renderItemsSection('team', content.team, body);
                 }
-            }));
+            }, activeKeys.has('team')));
         }
 
         // 9. About
@@ -1555,7 +1609,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!content.about.config) content.about.config = {};
             sectionsList.appendChild(createSectionEl('about', 'Nosotros', (body) => {
                 renderAboutSection(content.about, body);
-            }));
+            }, activeKeys.has('about')));
         }
 
         // 10. Contact
@@ -1563,14 +1617,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!content.contact.config) content.contact.config = {};
             sectionsList.appendChild(createSectionEl('contact', 'Contacto', (body) => {
                 renderContactSection(content.contact, body);
-            }));
+            }, activeKeys.has('contact')));
         }
 
         // 11. Footer
         if (content.footer) {
             sectionsList.appendChild(createSectionEl('footer', 'Footer', (body) => {
                 renderFooterSection(content.footer, body);
-            }));
+            }, activeKeys.has('footer')));
         }
 
         sectionsList.scrollTop = scrollPos;
