@@ -23,7 +23,6 @@ import email.policy
 
 # ---- CONFIGURACIÓN ----
 PORT = 5500                    # Puerto del servidor (5500, 5501, 5502... para nuevos servicios)
-CONFIG_FILE = 'config.json'    # Archivo de configuración de animación
 CONTENT_FILE = 'content.json'  # Archivo de contenido de la página
 CONTENT_TYPE = 'application/json'  # Tipo de contenido para respuestas JSON
 SEPARATOR = '=' * 44           # Línea separadora para mensajes
@@ -54,51 +53,10 @@ class CustomHandler(SimpleHTTPRequestHandler):
     def do_POST(self):
         """
         Manejar requests POST
-        Ruta: /api/save-config → Guarda configuración en config.json
+        Ruta: /api/save-content → Guarda contenido en content.json
         """
-        # ---- Ruta: /api/save-config ----
-        if self.path == '/api/save-config':
-            try:
-                # Leer el contenido del body
-                content_length = int(self.headers['Content-Length'])
-                body = self.rfile.read(content_length).decode('utf-8')
-                
-                # Parsear el JSON recibido
-                config = json.loads(body)
-                
-                # Guardar en config.json con formato legible
-                with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-                    json.dump(config, f, indent=4, ensure_ascii=False)
-                
-                # Responder con éxito
-                self.send_response(200)
-                self.send_header('Content-Type', CONTENT_TYPE)
-                self.end_headers()
-                
-                response = {
-                    'success': True,
-                    'message': 'Configuración guardada en config.json'
-                }
-                self.wfile.write(json.dumps(response).encode('utf-8'))
-                
-                print(f'✓ Configuración guardada en {CONFIG_FILE}')
-                
-            except Exception as e:
-                # Error al guardar
-                self.send_response(400)
-                self.send_header('Content-Type', CONTENT_TYPE)
-                self.end_headers()
-                
-                response = {
-                    'success': False,
-                    'message': f'Error: {str(e)}'
-                }
-                self.wfile.write(json.dumps(response).encode('utf-8'))
-                
-                print(f'✗ Error al guardar: {e}')
-        
         # ---- Ruta: /api/save-content ----
-        elif self.path == '/api/save-content':
+        if self.path == '/api/save-content':
             try:
                 content_length = int(self.headers['Content-Length'])
                 body = self.rfile.read(content_length).decode('utf-8')
@@ -124,85 +82,6 @@ class CustomHandler(SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps(response).encode('utf-8'))
                 print(f'✗ Error al guardar contenido: {e}')
         
-        # ---- Ruta: /api/save-styles ----
-        elif self.path == '/api/save-styles':
-            try:
-                content_length = int(self.headers['Content-Length'])
-                body = self.rfile.read(content_length).decode('utf-8')
-                styles = json.loads(body)
-                
-                with open('styles.json', 'w', encoding='utf-8') as f:
-                    json.dump(styles, f, indent=4, ensure_ascii=False)
-                
-                self.send_response(200)
-                self.send_header('Content-Type', CONTENT_TYPE)
-                self.end_headers()
-                
-                response = {'success': True, 'message': 'Estilos guardados'}
-                self.wfile.write(json.dumps(response).encode('utf-8'))
-                
-                print('✓ Estilos guardados en styles.json')
-                
-            except Exception as e:
-                self.send_response(400)
-                self.send_header('Content-Type', CONTENT_TYPE)
-                self.end_headers()
-                response = {'success': False, 'message': f'Error: {str(e)}'}
-                self.wfile.write(json.dumps(response).encode('utf-8'))
-                print(f'✗ Error al guardar estilos: {e}')
-        
-        # ---- Ruta: /api/save-layout ----
-        elif self.path == '/api/save-layout':
-            try:
-                content_length = int(self.headers['Content-Length'])
-                body_json = self.rfile.read(content_length).decode('utf-8')
-                data = json.loads(body_json)
-                new_html_content = data.get('html', '')
-
-                # Read index.html
-                with open('index.html', 'r', encoding='utf-8') as f:
-                    full_html = f.read()
-
-                # Replace content inside <body>...</body>
-                start_marker = '<body>'
-                end_marker = '</body>'
-
-                start_idx = full_html.find(start_marker)
-                end_idx = full_html.rfind(end_marker)
-
-                if start_idx != -1 and end_idx != -1:
-                    # Backup
-                    if not os.path.exists('index.html.bak'):
-                        with open('index.html.bak', 'w', encoding='utf-8') as f:
-                            f.write(full_html)
-
-                    # Construct new HTML
-                    updated_html = (
-                        full_html[:start_idx + len(start_marker)] +
-                        '\n' + new_html_content + '\n' +
-                        full_html[end_idx:]
-                    )
-
-                    with open('index.html', 'w', encoding='utf-8') as f:
-                        f.write(updated_html)
-
-                    self.send_response(200)
-                    self.send_header('Content-Type', CONTENT_TYPE)
-                    self.end_headers()
-                    response = {'success': True, 'message': 'Layout guardado en index.html'}
-                    self.wfile.write(json.dumps(response).encode('utf-8'))
-                    print('✓ Layout guardado en index.html')
-                else:
-                    raise Exception('No se encontraron tags <body> en index.html')
-
-            except Exception as e:
-                self.send_response(400)
-                self.send_header('Content-Type', CONTENT_TYPE)
-                self.end_headers()
-                response = {'success': False, 'message': f'Error: {str(e)}'}
-                self.wfile.write(json.dumps(response).encode('utf-8'))
-                print(f'✗ Error al guardar layout: {e}')
-
         # ---- Ruta: /api/upload-image ----
         elif self.path == '/api/upload-image':
             try:
@@ -331,7 +210,6 @@ def run_server():
     print('')
     print('  Endpoints disponibles:')
     print('  • GET  /              → Página principal')
-    print('  • POST /api/save-config → Guardar configuración')
     print('  • POST /api/save-content → Guardar contenido')
     print('  • POST /api/upload-image → Subir imagen')
     print('')
