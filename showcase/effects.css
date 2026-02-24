@@ -665,55 +665,6 @@ section[data-bg-opacity]>* {
 }
 
 /* ============================================
-   LEGACY COMPAT — old class-based effects
+   LEGACY COMPAT REMOVED
+   All effects are now handled via data-attributes and granular config.
    ============================================ */
-
-.hover-scale .service-card:hover,
-.hover-scale .benefit-item:hover,
-.hover-scale .team-card:hover {
-    transform: scale(1.05) !important;
-    z-index: 10;
-}
-
-.hover-lift .service-card:hover,
-.hover-lift .benefit-item:hover,
-.hover-lift .team-card:hover {
-    transform: translateY(-15px) !important;
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3) !important;
-    z-index: 10;
-}
-
-.hover-glow .service-card:hover,
-.hover-glow .benefit-item:hover,
-.hover-glow .team-card:hover {
-    box-shadow: 0 0 20px var(--primary-glow), 0 0 40px var(--primary-glow) !important;
-    border-color: var(--primary);
-}
-
-.interaction-focus:hover .service-card:not(:hover),
-.interaction-focus:hover .benefit-item:not(:hover),
-.interaction-focus:hover .team-card:not(:hover) {
-    filter: blur(4px) grayscale(0.6) !important;
-    opacity: 0.5 !important;
-    transform: scale(0.95) !important;
-}
-
-.interaction-focus .service-card:hover,
-.interaction-focus .benefit-item:hover,
-.interaction-focus .team-card:hover {
-    transform: scale(1.1) !important;
-    z-index: 20;
-}
-
-.border-solid .service-card,
-.border-solid .benefit-item,
-.border-solid .team-card {
-    border: 2px solid var(--border);
-}
-
-.border-neon .service-card,
-.border-neon .benefit-item,
-.border-neon .team-card {
-    border: 1px solid var(--primary);
-    box-shadow: 0 0 5px var(--primary);
-}
