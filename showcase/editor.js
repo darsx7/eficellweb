@@ -1062,6 +1062,37 @@ document.addEventListener('DOMContentLoaded', () => {
             if (item.role !== undefined) item.role = v;
         }));
 
+        // Individual Style Override Button
+        const styleBtn = document.createElement('button');
+        styleBtn.textContent = '🎨 Estilo Individual';
+        styleBtn.className = 'btn-small';
+        styleBtn.style.cssText = 'width:100%; margin-bottom:0.5rem; background:var(--surface); border:1px solid var(--border); color:var(--text-secondary); cursor:pointer; font-size:0.8rem; padding:4px;';
+        styleBtn.onclick = () => {
+            const stylePanel = card.querySelector('.style-override-panel');
+            stylePanel.style.display = stylePanel.style.display === 'none' ? 'block' : 'none';
+        };
+        card.appendChild(styleBtn);
+
+        // Style Override Panel (Hidden by default)
+        const stylePanel = document.createElement('div');
+        stylePanel.className = 'style-override-panel';
+        stylePanel.style.cssText = 'display:none; background:rgba(0,0,0,0.2); padding:0.5rem; margin-bottom:0.5rem; border-radius:4px; border-left:2px solid var(--primary);';
+
+        if (!item.styleOverride) item.styleOverride = {};
+        const so = item.styleOverride;
+
+        stylePanel.appendChild(createColorInput('Fondo', so.backgroundColor || '', (v) => { so.backgroundColor = v; }));
+        stylePanel.appendChild(createColorInput('Borde', so.borderColor || '', (v) => { so.borderColor = v; }));
+        stylePanel.appendChild(createColorInput('Texto', so.color || '', (v) => { so.color = v; }));
+
+        // Font size scale
+        stylePanel.appendChild(buildSlider('Escala Fuente', (so.fontSizeScale || 1) * 100, 50, 200, 10, '%', (v) => { so.fontSizeScale = v / 100; }));
+
+        // Border Radius
+        stylePanel.appendChild(buildSlider('Redondeo', so.borderRadius ?? -1, -1, 50, 1, 'px', (v) => { so.borderRadius = v === -1 ? undefined : v; }));
+
+        card.appendChild(stylePanel);
+
         // Image preview + image controls (for team)
         if (item.image !== undefined) {
             const imgGroup = document.createElement('div');
@@ -1346,6 +1377,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="pill-duration">${dur}ms</span>
                 ${overflowIcon ? `<span class="pill-overflow">${overflowIcon}</span>` : ''}
             `;
+
+            // Config Button (New)
+            const configBtn = document.createElement('button');
+            configBtn.type = 'button';
+            configBtn.className = 'pill-config';
+            configBtn.textContent = '⚙️';
+            configBtn.style.marginRight = '4px';
+            configBtn.onclick = (e) => {
+                e.stopPropagation();
+                // Toggle config panel for this effect
+                let panel = pill.nextElementSibling;
+                if (panel && panel.classList.contains('effect-config-panel')) {
+                    panel.remove();
+                } else {
+                    panel = document.createElement('div');
+                    panel.className = 'effect-config-panel';
+                    panel.style.cssText = 'background:rgba(0,0,0,0.3); padding:8px; margin-bottom:8px; border-radius:4px; font-size:0.8rem;';
+
+                    // Specific controls based on actions
+                    if (fx.actions.includes('glow')) {
+                        panel.appendChild(createColorInput('Color Brillo', fx.glowColor || '', (v) => { fx.glowColor = v; }));
+                    }
+                    if (fx.actions.includes('shake')) {
+                        panel.appendChild(buildSlider('Eje X', fx.shakeX ?? 8, 0, 50, 1, 'px', (v) => { fx.shakeX = v; }));
+                        panel.appendChild(buildSlider('Rotación', fx.shakeRot ?? 1, 0, 15, 0.5, 'deg', (v) => { fx.shakeRot = v; }));
+                    }
+                    if (fx.actions.includes('pulse')) {
+                        panel.appendChild(buildSlider('Escala Pulso', (fx.pulseScale ?? 1.04) * 100, 100, 150, 1, '%', (v) => { fx.pulseScale = v / 100; }));
+                    }
+
+                    // General overrides
+                    panel.appendChild(buildSlider('Intensidad', fx.intensity ?? 50, 0, 100, 5, '%', (v) => { fx.intensity = v; }));
+                    panel.appendChild(buildSlider('Duración', fx.duration || 350, 100, 3000, 50, 'ms', (v) => { fx.duration = v; }));
+
+                    pill.after(panel);
+                }
+            };
+            pill.appendChild(configBtn);
+
             const removeBtn = document.createElement('button');
             removeBtn.type = 'button';
             removeBtn.className = 'pill-remove';

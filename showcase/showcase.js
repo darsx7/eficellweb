@@ -1047,6 +1047,7 @@ class Showcase {
                 if (fx.actions.includes('glow')) {
                     const g = (pct / 100) * 50; // 0.5px → 50px
                     styleVars.push(`--effect-glow-spread:${g.toFixed(0)}px`);
+                    if (fx.glowColor) styleVars.push(`--primary-glow:${fx.glowColor}`);
                 }
                 if (fx.actions.includes('rotate')) {
                     const r = (pct / 100) * 15; // 0 -> 15deg
@@ -1059,6 +1060,14 @@ class Showcase {
                 if (fx.actions.includes('blur')) {
                     const b = (pct / 100) * 10; // 0 -> 10px
                     styleVars.push(`--effect-blur:${b.toFixed(1)}px`);
+                }
+                // Granular animation overrides
+                if (fx.actions.includes('shake')) {
+                    if(fx.shakeX) styleVars.push(`--anim-shake-dist:${fx.shakeX}px`);
+                    if(fx.shakeRot) styleVars.push(`--anim-shake-rot:${fx.shakeRot}deg`);
+                }
+                if (fx.actions.includes('pulse')) {
+                    if(fx.pulseScale) styleVars.push(`--anim-pulse-scale:${fx.pulseScale}`);
                 }
 
                 if (fx.overflow) hasOverflow = true;
@@ -1120,10 +1129,20 @@ class Showcase {
                     <div class="services-carousel ${classes}" data-layout="carousel">
                         <div class="carousel-track">
                             ${services.items.map((item, i) => {
-                                const styleOverride = (item.geometry && item.geometry.override) ?
-                                    `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};` : '';
+                            let style = '';
+                            if (item.geometry && item.geometry.override) {
+                                style += `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};`;
+                            }
+                            if (item.styleOverride) {
+                                const so = item.styleOverride;
+                                if (so.backgroundColor) style += `background-color: ${so.backgroundColor};`;
+                                if (so.borderColor) style += `border-color: ${so.borderColor};`;
+                                if (so.color) style += `color: ${so.color};`;
+                                if (so.borderRadius !== undefined && so.borderRadius !== -1) style += `border-radius: ${so.borderRadius}px;`;
+                                if (so.fontSizeScale) style += `font-size: ${so.fontSizeScale}em;`;
+                            }
                                 return `
-                                <div class="carousel-slide service-card" data-delay="${i * 100}" style="${styleOverride}">
+                                <div class="carousel-slide service-card" data-delay="${i * 100}" style="${style}">
                                     <span class="card-icon">${item.icon}</span>
                                     <h3>${item.title}</h3>
                                     <p>${item.description}</p>
@@ -1209,10 +1228,20 @@ class Showcase {
                 contentHtml = `
                     <div class="services-grid ${classes}" data-layout="grid" style="--columns: ${columns}">
                         ${services.items.map((item, i) => {
-                            const styleOverride = (item.geometry && item.geometry.override) ?
-                                `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};` : '';
+                            let style = '';
+                            if (item.geometry && item.geometry.override) {
+                                style += `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};`;
+                            }
+                            if (item.styleOverride) {
+                                const so = item.styleOverride;
+                                if (so.backgroundColor) style += `background-color: ${so.backgroundColor};`;
+                                if (so.borderColor) style += `border-color: ${so.borderColor};`;
+                                if (so.color) style += `color: ${so.color};`;
+                                if (so.borderRadius !== undefined && so.borderRadius !== -1) style += `border-radius: ${so.borderRadius}px;`;
+                                if (so.fontSizeScale) style += `font-size: ${so.fontSizeScale}em;`;
+                            }
                             return `
-                            <div class="service-card" data-delay="${i * 100}" style="${styleOverride}">
+                            <div class="service-card" data-delay="${i * 100}" style="${style}">
                                 <span class="card-icon">${item.icon}</span>
                                 <h3>${item.title}</h3>
                                 <p>${item.description}</p>
@@ -1280,10 +1309,20 @@ class Showcase {
                     <div class="benefits-carousel ${classes}" data-layout="carousel">
                         <div class="carousel-track">
                             ${benefits.items.map((item, i) => {
-                                const styleOverride = (item.geometry && item.geometry.override) ?
-                                    `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};` : '';
+                            let style = '';
+                            if (item.geometry && item.geometry.override) {
+                                style += `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};`;
+                            }
+                            if (item.styleOverride) {
+                                const so = item.styleOverride;
+                                if (so.backgroundColor) style += `background-color: ${so.backgroundColor};`;
+                                if (so.borderColor) style += `border-color: ${so.borderColor};`;
+                                if (so.color) style += `color: ${so.color};`;
+                                if (so.borderRadius !== undefined && so.borderRadius !== -1) style += `border-radius: ${so.borderRadius}px;`;
+                                if (so.fontSizeScale) style += `font-size: ${so.fontSizeScale}em;`;
+                            }
                                 return `
-                                <div class="carousel-slide benefit-item" data-delay="${i * 80}" style="${styleOverride}">
+                                <div class="carousel-slide benefit-item" data-delay="${i * 80}" style="${style}">
                                     <span class="benefit-icon">${item.icon}</span>
                                     <h4>${item.title}</h4>
                                     <p>${item.description}</p>
@@ -1374,10 +1413,20 @@ class Showcase {
                 contentHtml = `
                     <div class="benefits-grid ${classes}" data-layout="grid" style="--columns: ${columns}">
                         ${benefits.items.map((item, i) => {
-                            const styleOverride = (item.geometry && item.geometry.override) ?
-                                `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};` : '';
+                            let style = '';
+                            if (item.geometry && item.geometry.override) {
+                                style += `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};`;
+                            }
+                            if (item.styleOverride) {
+                                const so = item.styleOverride;
+                                if (so.backgroundColor) style += `background-color: ${so.backgroundColor};`;
+                                if (so.borderColor) style += `border-color: ${so.borderColor};`;
+                                if (so.color) style += `color: ${so.color};`;
+                                if (so.borderRadius !== undefined && so.borderRadius !== -1) style += `border-radius: ${so.borderRadius}px;`;
+                                if (so.fontSizeScale) style += `font-size: ${so.fontSizeScale}em;`;
+                            }
                             return `
-                            <div class="benefit-item" data-delay="${i * 80}" style="${styleOverride}">
+                            <div class="benefit-item" data-delay="${i * 80}" style="${style}">
                                 <span class="benefit-icon">${item.icon}</span>
                                 <h4>${item.title}</h4>
                                 <p>${item.description}</p>
@@ -1440,10 +1489,20 @@ class Showcase {
             contentHtml = `
                 <div class="team-grid ${classes}" data-layout="grid" style="--columns: ${columns}">
                     ${team.items.map((item, i) => {
-                        const styleOverride = (item.geometry && item.geometry.override) ?
-                            `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};` : '';
+                            let style = '';
+                            if (item.geometry && item.geometry.override) {
+                                style += `transform: translate(${item.geometry.x}px, ${item.geometry.y}px); width: ${item.geometry.w}px; height: ${item.geometry.h === 'auto' ? 'auto' : item.geometry.h + 'px'}; position: relative; z-index: ${item.geometry.z || 1};`;
+                            }
+                            if (item.styleOverride) {
+                                const so = item.styleOverride;
+                                if (so.backgroundColor) style += `background-color: ${so.backgroundColor};`;
+                                if (so.borderColor) style += `border-color: ${so.borderColor};`;
+                                if (so.color) style += `color: ${so.color};`;
+                                if (so.borderRadius !== undefined && so.borderRadius !== -1) style += `border-radius: ${so.borderRadius}px;`;
+                                if (so.fontSizeScale) style += `font-size: ${so.fontSizeScale}em;`;
+                            }
                         return `
-                        <div class="team-card" data-delay="${i * 100}" style="${styleOverride}">
+                                <div class="carousel-slide team-card" data-delay="${i * 100}" style="${style}">
                             <div class="team-img-wrapper">
                                 <img src="${item.image}" alt="${item.name}" class="team-img" ${buildImgStyle(item)}>
                             </div>
