@@ -407,16 +407,22 @@ class Showcase {
     }
 
     enableEditMode(enabled) {
+        this.isEditMode = enabled;
         document.body.classList.toggle('edit-mode', enabled);
         if (enabled) {
+            // Disable animations
+            document.body.classList.add('no-animations');
             this.setupDraggableItems();
         } else {
-            // Cleanup draggables if needed (e.g. remove listeners, though they are usually safe to leave if gated by class or context)
+            document.body.classList.remove('no-animations');
+            // Re-enable interactions if needed
         }
     }
 
     setupDraggableItems() {
-        const items = document.querySelectorAll('.freeform-item');
+        // Now targeting ALL section items if we want mixed layout support
+        const items = document.querySelectorAll('.service-card, .benefit-item, .team-card');
+
         let draggedItem = null;
         let startX, startY, initialLeft, initialTop;
 
@@ -425,6 +431,8 @@ class Showcase {
             item.ondragstart = () => false;
 
             item.onmousedown = (e) => {
+                if (!this.isEditMode) return; // Only in edit mode
+
                 // Ignore inputs/buttons
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
 
@@ -432,11 +440,48 @@ class Showcase {
                 draggedItem = item;
                 startX = e.clientX;
                 startY = e.clientY;
+
+                // Get computed style for current position, handling both absolute and relative
+                const style = window.getComputedStyle(item);
+                const matrix = new WebKitCSSMatrix(style.transform);
+
+                // For absolute positioning (freeform), use offsetLeft/Top
+                // For relative/grid, we might want to switch to transform: translate
+                // BUT user requested "move freely".
+                // Best approach: If item has manual override, it should be position:absolute relative to container?
+                // Or use transform translate?
+                // Given the requirement "hybrid layout", transform translate is safer for grid items to offset them.
+                // But for pure freeform, absolute is better.
+
+                // Let's assume we use style.left/top if positioned, or transform if not.
+                // Simplified: We will use inline style left/top and ensure position is set.
+
+                // If not already absolute/relative with coords, initialize
+                if (style.position === 'static') {
+                    item.style.position = 'relative';
+                }
+
                 initialLeft = item.offsetLeft;
                 initialTop = item.offsetTop;
 
                 item.classList.add('dragging');
                 item.style.cursor = 'grabbing';
+
+                // Add resize handle if not present
+                if (!item.querySelector('.resize-handle')) {
+                    const handle = document.createElement('div');
+                    handle.className = 'resize-handle';
+                    handle.style.cssText = `
+                        position: absolute; bottom: 5px; right: 5px; width: 15px; height: 15px;
+                        background: white; border: 2px solid var(--primary);
+                        cursor: se-resize; z-index: 100;
+                    `;
+                    handle.onmousedown = (ev) => {
+                        ev.stopPropagation(); // Prevent drag
+                        this.startResize(ev, item);
+                    };
+                    item.appendChild(handle);
+                }
             };
         });
 
@@ -446,11 +491,22 @@ class Showcase {
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
 
-            const newLeft = initialLeft + dx;
-            const newTop = initialTop + dy;
+            // If the layout is NOT freeform, dragging changes transform translate
+            // If layout IS freeform, dragging changes left/top
+            const section = draggedItem.closest('section');
+            const layout = section.dataset.layout || 'grid';
 
-            draggedItem.style.left = `${newLeft}px`;
-            draggedItem.style.top = `${newTop}px`;
+            if (layout === 'freeform') {
+                const newLeft = initialLeft + dx;
+                const newTop = initialTop + dy;
+                draggedItem.style.left = `${newLeft}px`;
+                draggedItem.style.top = `${newTop}px`;
+            } else {
+                // Hybrid mode: Use transform for offset
+                draggedItem.style.transform = `translate(${dx}px, ${dy}px)`;
+                // Note: This is temporary visual. We need to decide how to persist this.
+                // Ideally we update geometry.x/y and render it as transform in grid mode.
+            }
         };
 
         document.onmouseup = () => {
@@ -458,27 +514,54 @@ class Showcase {
                 draggedItem.classList.remove('dragging');
                 draggedItem.style.cursor = '';
 
-                // Notify editor of new position
                 const section = draggedItem.closest('section');
-                const sectionId = section?.id; // 'servicios', 'beneficios'
-                // We need to map section ID to content key
+                const sectionId = section?.id;
                 let sectionKey = '';
                 if(sectionId === 'servicios') sectionKey = 'services';
                 else if(sectionId === 'beneficios') sectionKey = 'benefits';
                 else if(sectionId === 'equipo') sectionKey = 'team';
 
-                const index = draggedItem.dataset.index;
+                // We need index. Some layouts might not expose data-index on item directly.
+                // Let's ensure buildServices/etc add data-index to all items.
+                // Assuming they do (I added it to freeform, but maybe not others).
+                // Let's traverse to find index if missing
+                let index = draggedItem.dataset.index;
+                if (index === undefined) {
+                    // Fallback: find index in parent children
+                    const children = Array.from(draggedItem.parentNode.children);
+                    index = children.indexOf(draggedItem);
+                }
 
-                if (sectionKey && index !== undefined) {
-                    const geometry = {
-                        x: draggedItem.offsetLeft,
-                        y: draggedItem.offsetTop,
-                        w: draggedItem.offsetWidth,
-                        h: draggedItem.offsetHeight, // height might be 'auto' in render, but offsetHeight is px
-                        z: getComputedStyle(draggedItem).zIndex || 1
-                    };
+                if (sectionKey && index !== -1) {
+                    const layout = section.dataset.layout || 'grid';
+                    let geometry = {};
 
-                    // Send message to parent (editor)
+                    if (layout === 'freeform') {
+                        geometry = {
+                            x: draggedItem.offsetLeft,
+                            y: draggedItem.offsetTop,
+                            w: draggedItem.offsetWidth,
+                            h: draggedItem.offsetHeight,
+                            z: getComputedStyle(draggedItem).zIndex || 1
+                        };
+                    } else {
+                        // For hybrid, we want to save the DELTA (transform) as x/y?
+                        // Or convert to absolute?
+                        // User said: "move freely but work as carousel".
+                        // This implies an offset.
+                        // Let's save x/y as the transform values.
+                        const style = window.getComputedStyle(draggedItem);
+                        const matrix = new WebKitCSSMatrix(style.transform);
+                        geometry = {
+                            x: matrix.m41, // Translate X
+                            y: matrix.m42, // Translate Y
+                            w: draggedItem.offsetWidth,
+                            h: 'auto',
+                            z: 1,
+                            override: true // Mark as manual override
+                        };
+                    }
+
                     window.parent.postMessage({
                         type: 'item-moved',
                         section: sectionKey,
@@ -1852,6 +1935,61 @@ class Showcase {
         };
 
         requestAnimationFrame(animate);
+    }
+
+    startResize(e, item) {
+        e.preventDefault();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startW = item.offsetWidth;
+        const startH = item.offsetHeight;
+
+        const onMove = (mv) => {
+            const newW = Math.max(100, startW + (mv.clientX - startX));
+            const newH = Math.max(100, startH + (mv.clientY - startY));
+            item.style.width = `${newW}px`;
+            item.style.height = `${newH}px`;
+        };
+
+        const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+
+            // Sync geometry
+            // ... similar to drag end logic ...
+            // Simplified reuse: manually construct msg
+            const section = item.closest('section');
+            const sectionId = section?.id;
+            let sectionKey = '';
+            if(sectionId === 'servicios') sectionKey = 'services';
+            else if(sectionId === 'beneficios') sectionKey = 'benefits';
+            else if(sectionId === 'equipo') sectionKey = 'team';
+
+            let index = item.dataset.index;
+            if (index === undefined) {
+                const children = Array.from(item.parentNode.children);
+                index = children.indexOf(item);
+            }
+
+            if (sectionKey && index !== -1) {
+                const geometry = {
+                    x: item.offsetLeft,
+                    y: item.offsetTop,
+                    w: item.offsetWidth,
+                    h: item.offsetHeight,
+                    z: getComputedStyle(item).zIndex || 1
+                };
+                window.parent.postMessage({
+                    type: 'item-moved', // Reusing this for geometry update
+                    section: sectionKey,
+                    index: parseInt(index),
+                    geometry: geometry
+                }, globalThis.location.origin);
+            }
+        };
+
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
     }
 
     setupScrollAnimations() {
