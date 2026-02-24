@@ -1530,6 +1530,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
         configRow.appendChild(fxDiv);
 
+        // --- Carousel Advanced Config ---
+        if (section.config?.layout === 'carousel') {
+            const carouselDiv = document.createElement('div');
+            carouselDiv.className = 'carousel-config';
+            carouselDiv.style.cssText = 'margin-top: 1rem; padding: 0.5rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px;';
+            carouselDiv.innerHTML = '<label class="config-label">🎡 Carrusel Avanzado</label>';
+
+            if (!section.config.carouselOptions) {
+                section.config.carouselOptions = {
+                    activeScale: 1.1,
+                    inactiveOpacity: 0.7,
+                    activeShadow: 'soft',
+                    scrollSnap: 'center',
+                    autoPlay: 0
+                };
+            }
+            const co = section.config.carouselOptions;
+
+            // Active Scale
+            carouselDiv.appendChild(buildSlider('Escala Activo', (co.activeScale || 1) * 100, 100, 150, 5, '%', (v) => { co.activeScale = v / 100; }));
+
+            // Inactive Opacity
+            carouselDiv.appendChild(buildSlider('Opacidad Inactivo', (co.inactiveOpacity || 1) * 100, 10, 100, 10, '%', (v) => { co.inactiveOpacity = v / 100; }));
+
+            // Active Shadow
+            carouselDiv.appendChild(createSelect('Sombra Activo', ['none', 'soft', 'strong', 'glow'], co.activeShadow || 'soft', (val) => {
+                co.activeShadow = val;
+                updatePreview();
+            }));
+
+            // Scroll Snap
+            carouselDiv.appendChild(createSelect('Alineación (Snap)', ['center', 'start'], co.scrollSnap || 'center', (val) => {
+                co.scrollSnap = val;
+                updatePreview();
+            }));
+
+            // Autoplay
+            carouselDiv.appendChild(buildSlider('Autoplay (ms, 0=off)', co.autoPlay || 0, 0, 5000, 500, 'ms', (v) => { co.autoPlay = v; }));
+
+            configRow.appendChild(carouselDiv);
+        }
+
         // --- Expanded Card Customization ---
         const expandDiv = document.createElement('div');
         expandDiv.className = 'expand-config';

@@ -2127,6 +2127,135 @@ class Showcase {
         `).forEach(el => {
             observer.observe(el);
         });
+
+        // Initialize Advanced Carousels
+        this.initAdvancedCarousels();
+    }
+
+    initAdvancedCarousels() {
+        document.querySelectorAll('[data-layout="carousel"]').forEach(container => {
+            // Find section config
+            const sectionId = container.closest('section').id;
+            let sectionKey = '';
+            if(sectionId === 'servicios') sectionKey = 'services';
+            else if(sectionId === 'beneficios') sectionKey = 'benefits';
+            else if(sectionId === 'equipo') sectionKey = 'team';
+
+            const config = this.content[sectionKey]?.config?.carouselOptions || {
+                activeScale: 1.1,
+                inactiveOpacity: 0.7,
+                activeShadow: 'soft',
+                scrollSnap: 'center',
+                autoPlay: 0
+            };
+
+            const track = container.querySelector('.carousel-track');
+            if (!track) return;
+
+            // Apply Snap Alignment
+            track.style.scrollSnapType = 'x mandatory';
+            track.querySelectorAll('.carousel-slide').forEach(slide => {
+                slide.style.scrollSnapAlign = config.scrollSnap || 'center';
+                slide.style.transition = 'transform 0.4s ease, opacity 0.4s ease, box-shadow 0.4s ease';
+            });
+
+            // Intersection Observer for Active State
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const slide = entry.target;
+                    // Calculate center distance for more precise "analog" feel?
+                    // IntersectionRatio is simpler.
+                    // If ratio > 0.6 we consider it "active" candidate
+                    if (entry.intersectionRatio > 0.6) {
+                        slide.classList.add('carousel-active');
+                        this.updateSlideStyle(slide, true, config);
+                    } else {
+                        slide.classList.remove('carousel-active');
+                        this.updateSlideStyle(slide, false, config);
+                    }
+                });
+            }, {
+                root: track,
+                threshold: [0.6]
+            });
+
+            track.querySelectorAll('.carousel-slide').forEach(slide => observer.observe(slide));
+
+            // Initial state set
+            track.querySelectorAll('.carousel-slide').forEach(slide => {
+                this.updateSlideStyle(slide, slide.classList.contains('carousel-active'), config);
+            });
+
+            // Autoplay
+            if (config.autoPlay > 0) {
+                let interval;
+                const startPlay = () => {
+                    if (interval) clearInterval(interval);
+                    interval = setInterval(() => {
+                        if (this.isEditMode) return;
+                        track.scrollBy({ left: 300, behavior: 'smooth' });
+                        // Loop check: if at end, scroll to start?
+                        // Simplified: just scroll.
+                        if (track.scrollLeft + track.clientWidth >= track.scrollWidth - 50) {
+                            track.scrollTo({ left: 0, behavior: 'smooth' });
+                        }
+                    }, config.autoPlay);
+                };
+
+                startPlay();
+                track.addEventListener('mouseenter', () => clearInterval(interval));
+                track.addEventListener('mouseleave', startPlay);
+                track.addEventListener('touchstart', () => clearInterval(interval)); // Mobile stop
+            }
+        });
+    }
+
+    updateSlideStyle(slide, isActive, config) {
+        if (this.isEditMode) {
+            slide.style.transform = '';
+            slide.style.opacity = '';
+            slide.style.boxShadow = '';
+            return;
+        }
+
+        // Merge with existing style (e.g. overrides)
+        // This is tricky because we are setting properties that overrides also set.
+        // But overrides are inline `style="..."` attribute.
+        // We should try to respect them or assume carousel logic wins for these specific props unless user set them?
+        // Let's modify directly properties, assuming no conflict or carousel wins active state.
+
+        // However, if the item has geometry override (transform translate), we shouldn't overwrite `transform`.
+        // `slide.style.transform` overwrites everything.
+        // We need to APPEND to existing transform if present.
+
+        // Parse existing transform if it comes from geometry override
+        // Actually, geometry override sets inline style.
+        // If we change it here, we might lose position.
+        // BUT: Carousel layout usually ignores geometry overrides except active/inactive scaling.
+        // Wait, "Hybrid Layout" in Carousel means item has specific offset.
+        // If we apply active scale, we must combine: `scale(1.1) translate(x,y)`.
+
+        // Simple approach: Check if style has translate.
+        const currentTransform = slide.style.transform;
+        const translateMatch = currentTransform.match(/translate\([^)]+\)/);
+        const translateStr = translateMatch ? translateMatch[0] : '';
+
+        const scale = isActive ? (config.activeScale || 1.1) : 1;
+        const opacity = isActive ? 1 : (config.inactiveOpacity ?? 0.7);
+
+        // Shadow map
+        const shadows = {
+            'none': 'none',
+            'soft': '0 10px 30px rgba(0,0,0,0.15)',
+            'strong': '0 20px 50px rgba(0,0,0,0.4)',
+            'glow': `0 0 20px var(--primary-glow, rgba(245,158,11,0.5))`
+        };
+        const shadow = isActive ? (shadows[config.activeShadow] || shadows['soft']) : 'none';
+
+        slide.style.transform = `${translateStr} scale(${scale})`;
+        slide.style.opacity = opacity;
+        slide.style.boxShadow = shadow;
+        slide.style.zIndex = isActive ? 10 : 1;
     }
 }
 
