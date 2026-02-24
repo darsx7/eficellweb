@@ -20,10 +20,50 @@
         "networkGlowColor": "#b5e4ee",
         "logoHover": "glow"
     },
-    "styles": {
-        "primary": "#82f78a",
-        "secondary": "#eacd10",
-        "bgDark": "#1e1e2e"
+    "theme": {
+        "primary": "#f59e0b",
+        "primaryHover": "#d97706",
+        "secondary": "#fbbf24",
+        "bgDark": "#1e1e2e",
+        "network": {
+            "lineColor": "#f59e0b",
+            "glowColor": "#fbbf24",
+            "gridDensity": 40,
+            "interactionRadius": 150,
+            "interactionType": "repel"
+        },
+        "styles": {
+            "cards": {
+                "bgOpacity": 0.04,
+                "borderRadius": 20,
+                "shadow": true,
+                "hoverScale": 1.03,
+                "padding": 2.5,
+                "gap": 2
+            },
+            "buttons": { "borderRadius": 12, "hoverScale": 1.05 },
+            "sections": {
+                "heroOpacity": 1,
+                "servicesOpacity": 0.7,
+                "benefitsOpacity": 1,
+                "contactOpacity": 0.7,
+                "padding": 6
+            },
+            "texts": {
+                "titleOpacity": 1,
+                "paragraphOpacity": 0.7,
+                "titleSize": 2.5,
+                "bodySize": 1
+            },
+            "general": {
+                "networkOpacity": 0.5,
+                "navbarBlur": 20,
+                "navbarOpacity": 0.8,
+                "containerWidth": 1200
+            },
+            "animations": { "transitionSpeed": 0.4, "hoverLift": 10 },
+            "effects": { "glowIntensity": 0.4, "borderOpacity": 0.08 }
+        }
     },
     "hero": {
         "title": "Energía Sostenible Para Tu Futuro",
@@ -295,8 +335,4 @@
         ],
         "cta": "Cotizar Ahora"
     }
-
 }
-
-
-

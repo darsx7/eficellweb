@@ -11,57 +11,59 @@
 
 // ============================================
 // CONFIGURACIÓN DE TEMPLATES (PRESETS COMPLETOS)
-// Cada template tiene una personalidad visual completamente diferente
 // ============================================
 const TEMPLATES = {
     // ========== SOLAR: Energético y radiante ==========
     solar: {
         name: 'Solar',
         description: 'Energético y radiante',
-        primary: '#f59e0b',
-        primaryHover: '#d97706',
-        secondary: '#fbbf24',
-        network: {
-            lineColor: '#f59e0b',
-            glowColor: '#fbbf24',
-            gridDensity: 40,
-            interactionRadius: 150,
-            interactionType: 'repel'
-        },
-        styles: {
-            cards: {
-                bgOpacity: 0.04,
-                borderRadius: 20,
-                shadow: true,
-                hoverScale: 1.03,
-                padding: 2.5,
-                gap: 2
+        theme: {
+            primary: '#f59e0b',
+            primaryHover: '#d97706',
+            secondary: '#fbbf24',
+            bgDark: '#1e1e2e',
+            network: {
+                lineColor: '#f59e0b',
+                glowColor: '#fbbf24',
+                gridDensity: 40,
+                interactionRadius: 150,
+                interactionType: 'repel'
             },
-            buttons: { borderRadius: 12, hoverScale: 1.05 },
-            sections: {
-                heroOpacity: 1,
-                servicesOpacity: 0.7,
-                benefitsOpacity: 1,
-                contactOpacity: 0.7,
-                padding: 6
-            },
-            texts: {
-                titleOpacity: 1,
-                paragraphOpacity: 0.7,
-                titleSize: 2.5,
-                bodySize: 1
-            },
-            general: {
-                networkOpacity: 0.5,
-                navbarBlur: 20,
-                navbarOpacity: 0.8,
-                containerWidth: 1200
-            },
-            animations: { transitionSpeed: 0.4, hoverLift: 10 },
-            effects: { glowIntensity: 0.4, borderOpacity: 0.08 }
+            styles: {
+                cards: {
+                    bgOpacity: 0.04,
+                    borderRadius: 20,
+                    shadow: true,
+                    hoverScale: 1.03,
+                    padding: 2.5,
+                    gap: 2
+                },
+                buttons: { borderRadius: 12, hoverScale: 1.05 },
+                sections: {
+                    heroOpacity: 1,
+                    servicesOpacity: 0.7,
+                    benefitsOpacity: 1,
+                    contactOpacity: 0.7,
+                    padding: 6
+                },
+                texts: {
+                    titleOpacity: 1,
+                    paragraphOpacity: 0.7,
+                    titleSize: 2.5,
+                    bodySize: 1
+                },
+                general: {
+                    networkOpacity: 0.5,
+                    navbarBlur: 20,
+                    navbarOpacity: 0.8,
+                    containerWidth: 1200
+                },
+                animations: { transitionSpeed: 0.4, hoverLift: 10 },
+                effects: { glowIntensity: 0.4, borderOpacity: 0.08 }
+            }
         },
         layout: {
-            services: 'grid',       // grid 2x2
+            services: 'grid',
             benefits: 'grid',
             team: 'grid',
             columns: 2
@@ -72,51 +74,54 @@ const TEMPLATES = {
     ocean: {
         name: 'Océano',
         description: 'Espacioso y fluido',
-        primary: '#0ea5e9',
-        primaryHover: '#0284c7',
-        secondary: '#38bdf8',
-        network: {
-            lineColor: '#0ea5e9',
-            glowColor: '#7dd3fc',
-            gridDensity: 25,
-            interactionRadius: 220,
-            interactionType: 'wave'
-        },
-        styles: {
-            cards: {
-                bgOpacity: 0.08,
-                borderRadius: 32,
-                shadow: true,
-                hoverScale: 1.05,
-                padding: 3.5,
-                gap: 3
+        theme: {
+            primary: '#0ea5e9',
+            primaryHover: '#0284c7',
+            secondary: '#38bdf8',
+            bgDark: '#1e1e2e',
+            network: {
+                lineColor: '#0ea5e9',
+                glowColor: '#7dd3fc',
+                gridDensity: 25,
+                interactionRadius: 220,
+                interactionType: 'wave'
             },
-            buttons: { borderRadius: 24, hoverScale: 1.08 },
-            sections: {
-                heroOpacity: 1,
-                servicesOpacity: 0.5,
-                benefitsOpacity: 0.3,
-                contactOpacity: 0.6,
-                padding: 8
-            },
-            texts: {
-                titleOpacity: 1,
-                paragraphOpacity: 0.8,
-                titleSize: 3,
-                bodySize: 1.15
-            },
-            general: {
-                networkOpacity: 0.7,
-                navbarBlur: 30,
-                navbarOpacity: 0.6,
-                containerWidth: 1400
-            },
-            animations: { transitionSpeed: 0.6, hoverLift: 20 },
-            effects: { glowIntensity: 0.7, borderOpacity: 0.15 }
+            styles: {
+                cards: {
+                    bgOpacity: 0.08,
+                    borderRadius: 32,
+                    shadow: true,
+                    hoverScale: 1.05,
+                    padding: 3.5,
+                    gap: 3
+                },
+                buttons: { borderRadius: 24, hoverScale: 1.08 },
+                sections: {
+                    heroOpacity: 1,
+                    servicesOpacity: 0.5,
+                    benefitsOpacity: 0.3,
+                    contactOpacity: 0.6,
+                    padding: 8
+                },
+                texts: {
+                    titleOpacity: 1,
+                    paragraphOpacity: 0.8,
+                    titleSize: 3,
+                    bodySize: 1.15
+                },
+                general: {
+                    networkOpacity: 0.7,
+                    navbarBlur: 30,
+                    navbarOpacity: 0.6,
+                    containerWidth: 1400
+                },
+                animations: { transitionSpeed: 0.6, hoverLift: 20 },
+                effects: { glowIntensity: 0.7, borderOpacity: 0.15 }
+            }
         },
         layout: {
-            services: 'carousel',   // Carrusel horizontal
-            benefits: 'featured',   // Grande + pequeños
+            services: 'carousel',
+            benefits: 'featured',
             team: 'carousel',
             columns: 1
         }
@@ -126,50 +131,53 @@ const TEMPLATES = {
     forest: {
         name: 'Bosque',
         description: 'Natural y orgánico',
-        primary: '#10b981',
-        primaryHover: '#059669',
-        secondary: '#34d399',
-        network: {
-            lineColor: '#10b981',
-            glowColor: '#6ee7b7',
-            gridDensity: 55,
-            interactionRadius: 100,
-            interactionType: 'glow'
-        },
-        styles: {
-            cards: {
-                bgOpacity: 0.06,
-                borderRadius: 16,
-                shadow: true,
-                hoverScale: 1.02,
-                padding: 2,
-                gap: 1.5
+        theme: {
+            primary: '#10b981',
+            primaryHover: '#059669',
+            secondary: '#34d399',
+            bgDark: '#1e1e2e',
+            network: {
+                lineColor: '#10b981',
+                glowColor: '#6ee7b7',
+                gridDensity: 55,
+                interactionRadius: 100,
+                interactionType: 'glow'
             },
-            buttons: { borderRadius: 8, hoverScale: 1.02 },
-            sections: {
-                heroOpacity: 0.8,
-                servicesOpacity: 0.9,
-                benefitsOpacity: 0.85,
-                contactOpacity: 0.9,
-                padding: 5
-            },
-            texts: {
-                titleOpacity: 0.95,
-                paragraphOpacity: 0.75,
-                titleSize: 2.25,
-                bodySize: 0.95
-            },
-            general: {
-                networkOpacity: 0.35,
-                navbarBlur: 15,
-                navbarOpacity: 0.9,
-                containerWidth: 1100
-            },
-            animations: { transitionSpeed: 0.5, hoverLift: 6 },
-            effects: { glowIntensity: 0.25, borderOpacity: 0.12 }
+            styles: {
+                cards: {
+                    bgOpacity: 0.06,
+                    borderRadius: 16,
+                    shadow: true,
+                    hoverScale: 1.02,
+                    padding: 2,
+                    gap: 1.5
+                },
+                buttons: { borderRadius: 8, hoverScale: 1.02 },
+                sections: {
+                    heroOpacity: 0.8,
+                    servicesOpacity: 0.9,
+                    benefitsOpacity: 0.85,
+                    contactOpacity: 0.9,
+                    padding: 5
+                },
+                texts: {
+                    titleOpacity: 0.95,
+                    paragraphOpacity: 0.75,
+                    titleSize: 2.25,
+                    bodySize: 0.95
+                },
+                general: {
+                    networkOpacity: 0.35,
+                    navbarBlur: 15,
+                    navbarOpacity: 0.9,
+                    containerWidth: 1100
+                },
+                animations: { transitionSpeed: 0.5, hoverLift: 6 },
+                effects: { glowIntensity: 0.25, borderOpacity: 0.12 }
+            }
         },
         layout: {
-            services: 'list',       // Lista vertical
+            services: 'list',
             benefits: 'grid',
             team: 'grid',
             columns: 3
@@ -180,50 +188,53 @@ const TEMPLATES = {
     sunset: {
         name: 'Atardecer',
         description: 'Vibrante y dramático',
-        primary: '#f43f5e',
-        primaryHover: '#e11d48',
-        secondary: '#fb923c',
-        network: {
-            lineColor: '#f43f5e',
-            glowColor: '#fda4af',
-            gridDensity: 30,
-            interactionRadius: 250,
-            interactionType: 'attract'
-        },
-        styles: {
-            cards: {
-                bgOpacity: 0.12,
-                borderRadius: 28,
-                shadow: true,
-                hoverScale: 1.08,
-                padding: 3,
-                gap: 2.5
+        theme: {
+            primary: '#f43f5e',
+            primaryHover: '#e11d48',
+            secondary: '#fb923c',
+            bgDark: '#1e1e2e',
+            network: {
+                lineColor: '#f43f5e',
+                glowColor: '#fda4af',
+                gridDensity: 30,
+                interactionRadius: 250,
+                interactionType: 'attract'
             },
-            buttons: { borderRadius: 50, hoverScale: 1.1 },
-            sections: {
-                heroOpacity: 1,
-                servicesOpacity: 0.85,
-                benefitsOpacity: 0.9,
-                contactOpacity: 0.8,
-                padding: 7
-            },
-            texts: {
-                titleOpacity: 1,
-                paragraphOpacity: 0.8,
-                titleSize: 3.5,
-                bodySize: 1.1
-            },
-            general: {
-                networkOpacity: 0.65,
-                navbarBlur: 25,
-                navbarOpacity: 0.7,
-                containerWidth: 1300
-            },
-            animations: { transitionSpeed: 0.35, hoverLift: 18 },
-            effects: { glowIntensity: 0.8, borderOpacity: 0.2 }
+            styles: {
+                cards: {
+                    bgOpacity: 0.12,
+                    borderRadius: 28,
+                    shadow: true,
+                    hoverScale: 1.08,
+                    padding: 3,
+                    gap: 2.5
+                },
+                buttons: { borderRadius: 50, hoverScale: 1.1 },
+                sections: {
+                    heroOpacity: 1,
+                    servicesOpacity: 0.85,
+                    benefitsOpacity: 0.9,
+                    contactOpacity: 0.8,
+                    padding: 7
+                },
+                texts: {
+                    titleOpacity: 1,
+                    paragraphOpacity: 0.8,
+                    titleSize: 3.5,
+                    bodySize: 1.1
+                },
+                general: {
+                    networkOpacity: 0.65,
+                    navbarBlur: 25,
+                    navbarOpacity: 0.7,
+                    containerWidth: 1300
+                },
+                animations: { transitionSpeed: 0.35, hoverLift: 18 },
+                effects: { glowIntensity: 0.8, borderOpacity: 0.2 }
+            }
         },
         layout: {
-            services: 'featured',   // 1 grande + resto
+            services: 'featured',
             benefits: 'carousel',
             team: 'carousel',
             columns: 2
@@ -234,47 +245,50 @@ const TEMPLATES = {
     purple: {
         name: 'Violeta',
         description: 'Premium y elegante',
-        primary: '#8b5cf6',
-        primaryHover: '#7c3aed',
-        secondary: '#c4b5fd',
-        network: {
-            lineColor: '#8b5cf6',
-            glowColor: '#ddd6fe',
-            gridDensity: 45,
-            interactionRadius: 180,
-            interactionType: 'repel'
-        },
-        styles: {
-            cards: {
-                bgOpacity: 0.05,
-                borderRadius: 24,
-                shadow: true,
-                hoverScale: 1.04,
-                padding: 2.75,
-                gap: 2
+        theme: {
+            primary: '#8b5cf6',
+            primaryHover: '#7c3aed',
+            secondary: '#c4b5fd',
+            bgDark: '#1e1e2e',
+            network: {
+                lineColor: '#8b5cf6',
+                glowColor: '#ddd6fe',
+                gridDensity: 45,
+                interactionRadius: 180,
+                interactionType: 'repel'
             },
-            buttons: { borderRadius: 16, hoverScale: 1.06 },
-            sections: {
-                heroOpacity: 1,
-                servicesOpacity: 0.65,
-                benefitsOpacity: 0.7,
-                contactOpacity: 0.6,
-                padding: 6.5
-            },
-            texts: {
-                titleOpacity: 1,
-                paragraphOpacity: 0.75,
-                titleSize: 2.75,
-                bodySize: 1.05
-            },
-            general: {
-                networkOpacity: 0.55,
-                navbarBlur: 22,
-                navbarOpacity: 0.75,
-                containerWidth: 1250
-            },
-            animations: { transitionSpeed: 0.45, hoverLift: 12 },
-            effects: { glowIntensity: 0.55, borderOpacity: 0.1 }
+            styles: {
+                cards: {
+                    bgOpacity: 0.05,
+                    borderRadius: 24,
+                    shadow: true,
+                    hoverScale: 1.04,
+                    padding: 2.75,
+                    gap: 2
+                },
+                buttons: { borderRadius: 16, hoverScale: 1.06 },
+                sections: {
+                    heroOpacity: 1,
+                    servicesOpacity: 0.65,
+                    benefitsOpacity: 0.7,
+                    contactOpacity: 0.6,
+                    padding: 6.5
+                },
+                texts: {
+                    titleOpacity: 1,
+                    paragraphOpacity: 0.75,
+                    titleSize: 2.75,
+                    bodySize: 1.05
+                },
+                general: {
+                    networkOpacity: 0.55,
+                    navbarBlur: 22,
+                    navbarOpacity: 0.75,
+                    containerWidth: 1250
+                },
+                animations: { transitionSpeed: 0.45, hoverLift: 12 },
+                effects: { glowIntensity: 0.55, borderOpacity: 0.1 }
+            }
         },
         layout: {
             services: 'grid',
@@ -288,51 +302,54 @@ const TEMPLATES = {
     minimal: {
         name: 'Minimal',
         description: 'Ultra limpio y simple',
-        primary: '#525252',
-        primaryHover: '#404040',
-        secondary: '#737373',
-        network: {
-            lineColor: '#525252',
-            glowColor: '#a3a3a3',
-            gridDensity: 80,
-            interactionRadius: 80,
-            interactionType: 'glow'
-        },
-        styles: {
-            cards: {
-                bgOpacity: 0.02,
-                borderRadius: 8,
-                shadow: false,
-                hoverScale: 1.01,
-                padding: 1.75,
-                gap: 1
+        theme: {
+            primary: '#525252',
+            primaryHover: '#404040',
+            secondary: '#737373',
+            bgDark: '#1e1e2e',
+            network: {
+                lineColor: '#525252',
+                glowColor: '#a3a3a3',
+                gridDensity: 80,
+                interactionRadius: 80,
+                interactionType: 'glow'
             },
-            buttons: { borderRadius: 4, hoverScale: 1.02 },
-            sections: {
-                heroOpacity: 0.5,
-                servicesOpacity: 0.4,
-                benefitsOpacity: 0.35,
-                contactOpacity: 0.4,
-                padding: 4
-            },
-            texts: {
-                titleOpacity: 0.85,
-                paragraphOpacity: 0.55,
-                titleSize: 2,
-                bodySize: 0.9
-            },
-            general: {
-                networkOpacity: 0.2,
-                navbarBlur: 40,
-                navbarOpacity: 0.95,
-                containerWidth: 1000
-            },
-            animations: { transitionSpeed: 0.2, hoverLift: 3 },
-            effects: { glowIntensity: 0.1, borderOpacity: 0.04 }
+            styles: {
+                cards: {
+                    bgOpacity: 0.02,
+                    borderRadius: 8,
+                    shadow: false,
+                    hoverScale: 1.01,
+                    padding: 1.75,
+                    gap: 1
+                },
+                buttons: { borderRadius: 4, hoverScale: 1.02 },
+                sections: {
+                    heroOpacity: 0.5,
+                    servicesOpacity: 0.4,
+                    benefitsOpacity: 0.35,
+                    contactOpacity: 0.4,
+                    padding: 4
+                },
+                texts: {
+                    titleOpacity: 0.85,
+                    paragraphOpacity: 0.55,
+                    titleSize: 2,
+                    bodySize: 0.9
+                },
+                general: {
+                    networkOpacity: 0.2,
+                    navbarBlur: 40,
+                    navbarOpacity: 0.95,
+                    containerWidth: 1000
+                },
+                animations: { transitionSpeed: 0.2, hoverLift: 3 },
+                effects: { glowIntensity: 0.1, borderOpacity: 0.04 }
+            }
         },
         layout: {
             services: 'list',
-            benefits: 'minimal',    // Solo iconos
+            benefits: 'minimal',
             team: 'grid',
             columns: 1
         }
@@ -344,7 +361,6 @@ const TEMPLATES = {
 // ============================================
 class Showcase {
     content = null;
-    currentTemplate = 'solar';
     currentEffect = 'repel';
     gridDensity = 40;
     networkMesh = null;
@@ -359,8 +375,8 @@ class Showcase {
         // Cargar contenido
         await this.loadContent();
 
-        // Aplicar template y estilos
-        this.applyTemplate(this.currentTemplate);
+        // Aplicar estilos desde content.theme
+        this.applyStyles();
 
         // Inicializar red
         this.initNetwork();
@@ -380,9 +396,30 @@ class Showcase {
             if (event.data.type === 'update-content') {
                 this.updateContent(event.data.content);
             } else if (event.data.type === 'change-template') {
-                this.applyTemplate(event.data.template);
+                // Aquí el editor nos manda un template key, actualizamos el contenido (que ya debería venir con theme nuevo si el editor lo gestiona)
+                // O si el editor solo manda la key, cargamos los valores de TEMPLATES y actualizamos nosotros.
+                // En este refactor, asumimos que el editor inyecta los valores en content.theme y nos manda update-content.
+                // Si seguimos soportando "change-template", simplemente aplicamos el preset al objeto content.
+                this.applyTemplatePreset(event.data.template);
             }
         });
+    }
+
+    applyTemplatePreset(templateName) {
+        if (!TEMPLATES[templateName]) return;
+        const preset = TEMPLATES[templateName];
+
+        // Merge preset theme into content theme
+        if (!this.content.theme) this.content.theme = {};
+        this.content.theme = JSON.parse(JSON.stringify(preset.theme));
+
+        // Layout overrides if needed (though layout is usually per-section config)
+        // We can optionally apply layout presets too if we want "one click total makeover"
+
+        this.applyStyles();
+        this.buildPage();
+        this.startAnimations();
+        this.createBurstEffect();
     }
 
     setupInteractions() {
@@ -568,7 +605,7 @@ class Showcase {
 
     updateContent(newContent) {
         this.content = newContent;
-        this.applyStyles(this.currentTemplate);
+        this.applyStyles();
         this.buildPage();
         this.startAnimations();
     }
@@ -590,6 +627,7 @@ class Showcase {
     getDefaultContent() {
         return {
             siteName: 'Showcase',
+            theme: TEMPLATES.solar.theme, // Fallback
             hero: {
                 title: 'Tu Título Aquí',
                 subtitle: 'Descripción del proyecto',
@@ -770,6 +808,18 @@ class Showcase {
                     const g = (pct / 100) * 50; // 0.5px → 50px
                     styleVars.push(`--effect-glow-spread:${g.toFixed(0)}px`);
                 }
+                if (fx.actions.includes('rotate')) {
+                    const r = (pct / 100) * 15; // 0 -> 15deg
+                    styleVars.push(`--effect-rotate:${r.toFixed(1)}deg`);
+                }
+                if (fx.actions.includes('skew')) {
+                    const k = (pct / 100) * 10; // 0 -> 10deg
+                    styleVars.push(`--effect-skew:${k.toFixed(1)}deg`);
+                }
+                if (fx.actions.includes('blur')) {
+                    const b = (pct / 100) * 10; // 0 -> 10px
+                    styleVars.push(`--effect-blur:${b.toFixed(1)}px`);
+                }
 
                 if (fx.overflow) hasOverflow = true;
             }
@@ -815,9 +865,9 @@ class Showcase {
     }
 
     buildServices(services) {
-        const template = TEMPLATES[this.currentTemplate];
-        const layout = services.config?.layout || template.layout?.services || 'grid';
-        const columns = services.config?.columns || template.layout?.columns || 2;
+        // Fallback or read from content.theme.layout
+        const layout = services.config?.layout || 'grid';
+        const columns = services.config?.columns || 2;
         const classes = this.getSectionClasses(services.config);
         const dataAttrs = this.getSectionDataAttrs(services.config);
 
@@ -883,6 +933,31 @@ class Showcase {
                 break;
             }
 
+            case 'freeform':
+                contentHtml = `
+                    <div class="services-freeform ${classes}" data-layout="freeform" style="position: relative; min-height: 600px;">
+                        ${services.items.map((item, i) => {
+                            const geo = item.geometry || { x: 50 + (i % 2) * 350, y: 50 + Math.floor(i / 2) * 300, w: 300, h: 'auto', z: 1 };
+                            const style = `
+                                position: absolute;
+                                left: ${geo.x}px;
+                                top: ${geo.y}px;
+                                width: ${geo.w}px;
+                                height: ${geo.h === 'auto' ? 'auto' : geo.h + 'px'};
+                                z-index: ${geo.z};
+                                transform: rotate(${geo.r || 0}deg);
+                            `;
+                            return `
+                                <div class="service-card freeform-item" data-index="${i}" style="${style}">
+                                    <span class="card-icon">${item.icon}</span>
+                                    <h3>${item.title}</h3>
+                                    <p>${item.description}</p>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>`;
+                break;
+
             default: // grid
                 contentHtml = `
                     <div class="services-grid ${classes}" data-layout="grid" style="--columns: ${columns}">
@@ -942,9 +1017,8 @@ class Showcase {
     }
 
     buildBenefits(benefits) {
-        const template = TEMPLATES[this.currentTemplate];
-        const layout = benefits.config?.layout || template.layout?.benefits || 'grid';
-        const columns = benefits.config?.columns || template.layout?.columns || 2;
+        const layout = benefits.config?.layout || 'grid';
+        const columns = benefits.config?.columns || 2;
         const classes = this.getSectionClasses(benefits.config);
         const dataAttrs = this.getSectionDataAttrs(benefits.config);
 
@@ -1014,6 +1088,31 @@ class Showcase {
                     </div>`;
                 break;
 
+            case 'freeform':
+                contentHtml = `
+                    <div class="benefits-freeform ${classes}" data-layout="freeform" style="position: relative; min-height: 600px;">
+                        ${benefits.items.map((item, i) => {
+                            const geo = item.geometry || { x: 50 + (i % 3) * 300, y: 50 + Math.floor(i / 3) * 250, w: 280, h: 'auto', z: 1 };
+                            const style = `
+                                position: absolute;
+                                left: ${geo.x}px;
+                                top: ${geo.y}px;
+                                width: ${geo.w}px;
+                                height: ${geo.h === 'auto' ? 'auto' : geo.h + 'px'};
+                                z-index: ${geo.z};
+                                transform: rotate(${geo.r || 0}deg);
+                            `;
+                            return `
+                                <div class="benefit-item freeform-item" data-index="${i}" style="${style}">
+                                    <span class="benefit-icon">${item.icon}</span>
+                                    <h4>${item.title}</h4>
+                                    <p>${item.description}</p>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>`;
+                break;
+
             default: // grid
                 contentHtml = `
                     <div class="benefits-grid ${classes}" data-layout="grid" style="--columns: ${columns}">
@@ -1036,9 +1135,8 @@ class Showcase {
     }
 
     buildTeam(team) {
-        const template = TEMPLATES[this.currentTemplate];
-        const layout = team.config?.layout || template.layout?.team || 'grid';
-        const columns = team.config?.columns || (layout === 'grid' ? 3 : (template.layout?.columns || 3));
+        const layout = team.config?.layout || 'grid';
+        const columns = team.config?.columns || 3;
         const classes = this.getSectionClasses(team.config);
         const dataAttrs = this.getSectionDataAttrs(team.config);
 
@@ -1137,7 +1235,7 @@ class Showcase {
     }
 
     // ============================================
-    // RED INTERACTIVA (simplificada)
+    // RED INTERACTIVA
     // ============================================
     initNetwork() {
         this.canvas = document.getElementById('networkCanvas');
@@ -1201,18 +1299,10 @@ class Showcase {
         this.time += 0.01;
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        const baseTemplate = TEMPLATES[this.currentTemplate];
-        const branding = this.content?.branding;
-        // Merge custom network colors from branding over template defaults
-        const template = {
-            ...baseTemplate,
-            network: {
-                ...baseTemplate.network,
-                ...(branding?.networkLineColor ? { lineColor: branding.networkLineColor } : {}),
-                ...(branding?.networkGlowColor ? { glowColor: branding.networkGlowColor } : {})
-            }
-        };
-        const interactionRadius = this.interactionRadius || 150;
+        // Get network config from content.theme
+        const netConfig = this.content?.theme?.network || TEMPLATES.solar.theme.network;
+        const interactionRadius = netConfig.interactionRadius || 150;
+        const interactionType = netConfig.interactionType || 'repel';
 
         // Actualizar y dibujar nodos
         this.nodes.forEach((node, index) => {
@@ -1230,7 +1320,7 @@ class Showcase {
                     const force = (interactionRadius - distance) / interactionRadius;
                     const angle = Math.atan2(dy, dx);
 
-                    switch (this.currentEffect) {
+                    switch (interactionType) {
                         case 'repel':
                             targetX = node.baseX + Math.cos(angle) * force * 40;
                             targetY = node.baseY + Math.sin(angle) * force * 40;
@@ -1260,14 +1350,14 @@ class Showcase {
             if (node.col < this.cols - 1) {
                 const rightIndex = index + this.rows;
                 if (rightIndex < this.nodes.length) {
-                    this.drawLine(node, this.nodes[rightIndex], template);
+                    this.drawLine(node, this.nodes[rightIndex], netConfig);
                 }
             }
             // Vertical
             if (node.row < this.rows - 1) {
                 const bottomIndex = index + 1;
                 if (bottomIndex < this.nodes.length && this.nodes[bottomIndex].col === node.col) {
-                    this.drawLine(node, this.nodes[bottomIndex], template);
+                    this.drawLine(node, this.nodes[bottomIndex], netConfig);
                 }
             }
         });
@@ -1292,7 +1382,7 @@ class Showcase {
             // Glow
             if (glowSize > 0) {
                 const gradient = this.ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowSize);
-                gradient.addColorStop(0, this.hexToRgba(template.network.glowColor, 0.6));
+                gradient.addColorStop(0, this.hexToRgba(netConfig.glowColor || '#ffffff', 0.6));
                 gradient.addColorStop(1, 'transparent');
                 this.ctx.beginPath();
                 this.ctx.arc(node.x, node.y, glowSize, 0, Math.PI * 2);
@@ -1303,14 +1393,14 @@ class Showcase {
             // Nodo
             this.ctx.beginPath();
             this.ctx.arc(node.x, node.y, size, 0, Math.PI * 2);
-            this.ctx.fillStyle = template.network.lineColor;
+            this.ctx.fillStyle = netConfig.lineColor || '#ffffff';
             this.ctx.fill();
         });
 
         requestAnimationFrame(() => this.animateNetwork());
     }
 
-    drawLine(node1, node2, template, baseOpacity = 0.5) {
+    drawLine(node1, node2, netConfig, baseOpacity = 0.5) {
         let opacity = baseOpacity;
         let lineWidth = 1;
 
@@ -1327,88 +1417,57 @@ class Showcase {
         }
 
         this.ctx.beginPath();
-        this.ctx.strokeStyle = this.hexToRgba(template.network.lineColor, opacity);
+        this.ctx.strokeStyle = this.hexToRgba(netConfig.lineColor || '#ffffff', opacity);
         this.ctx.lineWidth = lineWidth;
         this.ctx.moveTo(node1.x, node1.y);
         this.ctx.lineTo(node2.x, node2.y);
         this.ctx.stroke();
     }
 
-    hexToRgba(hex, alpha) {
-        const r = Number.parseInt(hex.slice(1, 3), 16);
-        const g = Number.parseInt(hex.slice(3, 5), 16);
-        const b = Number.parseInt(hex.slice(5, 7), 16);
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    createBurstEffect() {
+        const primary = this.content?.theme?.primary || '#f59e0b';
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+
+        for (let i = 0; i < 20; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.cssText = `
+                left: ${centerX}px;
+                top: ${centerY}px;
+                width: 8px;
+                height: 8px;
+                background: ${primary};
+            `;
+            document.body.appendChild(particle);
+
+            const angle = (Math.PI * 2 / 20) * i;
+            const distance = 200 + Math.random() * 150;
+            const destX = Math.cos(angle) * distance;
+            const destY = Math.sin(angle) * distance;
+
+            particle.animate([
+                { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+                { transform: `translate(calc(-50% + ${destX}px), calc(-50% + ${destY}px)) scale(0)`, opacity: 0 }
+            ], {
+                duration: 800,
+                easing: 'cubic-bezier(0.16, 1, 0.3, 1)'
+            }).onfinish = () => particle.remove();
+        }
     }
 
-    // ============================================
-    // CONTROLES
-    // ============================================
-    setupControls() {
-        const toggle = document.getElementById('templateToggle');
-        const panel = document.getElementById('templatePanel');
-
-        // Toggle panel
-        toggle.addEventListener('click', () => {
-            panel.classList.toggle('active');
-        });
-
-        // Click fuera cierra panel
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.template-selector')) {
-                panel.classList.remove('active');
-            }
-        });
-
-        // Template buttons
-        document.querySelectorAll('.template-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.template-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                this.applyTemplate(btn.dataset.template);
-            });
-        });
-
-        // Effect buttons
-        document.querySelectorAll('.effect-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.effect-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                this.currentEffect = btn.dataset.effect;
-            });
-        });
-
-        // Density slider
-        const densitySlider = document.getElementById('densitySlider');
-        const densityValue = document.getElementById('densityValue');
-
-        densitySlider.addEventListener('input', (e) => {
-            this.gridDensity = Number.parseInt(e.target.value, 10);
-            densityValue.textContent = this.gridDensity;
-            this.createGrid();
-        });
-    }
-
-    applyTemplate(templateName) {
-        this.currentTemplate = templateName;
-        this.applyStyles(templateName);
-        this.buildPage();
-        this.startAnimations();
-
-        // Efecto de transición visual
-        this.createBurstEffect();
-    }
-
-    applyStyles(templateName) {
-        const template = TEMPLATES[templateName];
+    applyStyles() {
+        if (!this.content || !this.content.theme) return;
+        const theme = this.content.theme;
         const root = document.documentElement;
-        const s = template.styles;
+        const s = theme.styles;
 
         // ====== Colores principales ======
-        root.style.setProperty('--primary', template.primary);
-        root.style.setProperty('--primary-hover', template.primaryHover);
-        root.style.setProperty('--secondary', template.secondary);
-        root.style.setProperty('--primary-glow', this.hexToRgba(template.primary, s.effects.glowIntensity));
+        root.style.setProperty('--primary', theme.primary);
+        root.style.setProperty('--primary-hover', theme.primaryHover);
+        root.style.setProperty('--secondary', theme.secondary);
+        root.style.setProperty('--primary-glow', this.hexToRgba(theme.primary, s.effects.glowIntensity));
+        root.style.setProperty('--bg-dark', theme.bgDark);
 
         // ====== Cards ======
         root.style.setProperty('--surface', `rgba(255, 255, 255, ${s.cards.bgOpacity})`);
@@ -1422,14 +1481,14 @@ class Showcase {
         root.style.setProperty('--btn-border-radius', `${s.buttons.borderRadius}px`);
         root.style.setProperty('--btn-hover-scale', s.buttons.hoverScale);
 
-        // ====== Sections (opacidades individuales) ======
+        // ====== Sections ======
         root.style.setProperty('--hero-opacity', s.sections.heroOpacity);
         root.style.setProperty('--services-opacity', s.sections.servicesOpacity);
         root.style.setProperty('--benefits-opacity', s.sections.benefitsOpacity);
         root.style.setProperty('--contact-opacity', s.sections.contactOpacity);
         root.style.setProperty('--section-padding', `${s.sections.padding}rem`);
 
-        // ====== Texts (tamaños y opacidades) ======
+        // ====== Texts ======
         root.style.setProperty('--title-size', `${s.texts.titleSize}rem`);
         root.style.setProperty('--body-size', `${s.texts.bodySize}rem`);
         root.style.setProperty('--title-opacity', s.texts.titleOpacity);
@@ -1450,57 +1509,39 @@ class Showcase {
         root.style.setProperty('--border', `rgba(255, 255, 255, ${s.effects.borderOpacity})`);
 
         // ====== Network config ======
-        this.gridDensity = template.network.gridDensity;
-        this.currentEffect = template.network.interactionType;
-        this.interactionRadius = template.network.interactionRadius;
+        this.gridDensity = theme.network.gridDensity;
         this.createGrid();
 
-        // Actualizar UI del panel
-        const densityValue = document.getElementById('densityValue');
-        const densitySlider = document.getElementById('densitySlider');
-        if (densityValue) densityValue.textContent = this.gridDensity;
-        if (densitySlider) densitySlider.value = this.gridDensity;
-
-        // Actualizar botón de efecto activo
-        document.querySelectorAll('.effect-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.effect === this.currentEffect);
-        });
-
-        // ====== Global Style Overrides ======
-        if (this.content?.styles) {
+        // ====== Global Style Overrides from content.styles (legacy support or extra override) ======
+        if (this.content.styles) {
             const st = this.content.styles;
-            if (st.primary) {
-                root.style.setProperty('--primary', st.primary);
-                root.style.setProperty('--primary-glow', this.hexToRgba(st.primary, s.effects.glowIntensity));
-            }
+            if (st.primary) root.style.setProperty('--primary', st.primary);
             if (st.secondary) root.style.setProperty('--secondary', st.secondary);
             if (st.bgDark) root.style.setProperty('--bg-dark', st.bgDark);
         }
-
-        // ====== Reconstruir página para aplicar nuevo layout ======
-        this.buildPage();
-        this.startAnimations();
     }
 
-    createBurstEffect() {
-        const template = TEMPLATES[this.currentTemplate];
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
+    createStatBurst(element) {
+        const rect = element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        // Use theme colors
+        const theme = this.content?.theme || TEMPLATES.solar.theme;
 
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 8; i++) {
             const particle = document.createElement('div');
             particle.className = 'particle';
             particle.style.cssText = `
                 left: ${centerX}px;
                 top: ${centerY}px;
-                width: 8px;
-                height: 8px;
-                background: ${template.primary};
+                width: 6px;
+                height: 6px;
+                background: ${i % 2 === 0 ? theme.primary : theme.secondary};
             `;
             document.body.appendChild(particle);
 
-            const angle = (Math.PI * 2 / 20) * i;
-            const distance = 200 + Math.random() * 150;
+            const angle = (Math.PI * 2 / 8) * i;
+            const distance = 50 + Math.random() * 30;
             const destX = Math.cos(angle) * distance;
             const destY = Math.sin(angle) * distance;
 
@@ -1508,11 +1549,13 @@ class Showcase {
                 { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
                 { transform: `translate(calc(-50% + ${destX}px), calc(-50% + ${destY}px)) scale(0)`, opacity: 0 }
             ], {
-                duration: 800,
+                duration: 500,
                 easing: 'cubic-bezier(0.16, 1, 0.3, 1)'
             }).onfinish = () => particle.remove();
         }
     }
+
+    // ... (Rest of methods: startAnimations, animateNumber, setupScrollAnimations, init)
 
     // ============================================
     // ANIMACIONES
@@ -1630,39 +1673,6 @@ class Showcase {
         };
 
         requestAnimationFrame(animate);
-    }
-
-    createStatBurst(element) {
-        const rect = element.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        const template = TEMPLATES[this.currentTemplate];
-
-        for (let i = 0; i < 8; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.style.cssText = `
-                left: ${centerX}px;
-                top: ${centerY}px;
-                width: 6px;
-                height: 6px;
-                background: ${i % 2 === 0 ? template.primary : template.secondary};
-            `;
-            document.body.appendChild(particle);
-
-            const angle = (Math.PI * 2 / 8) * i;
-            const distance = 50 + Math.random() * 30;
-            const destX = Math.cos(angle) * distance;
-            const destY = Math.sin(angle) * distance;
-
-            particle.animate([
-                { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
-                { transform: `translate(calc(-50% + ${destX}px), calc(-50% + ${destY}px)) scale(0)`, opacity: 0 }
-            ], {
-                duration: 500,
-                easing: 'cubic-bezier(0.16, 1, 0.3, 1)'
-            }).onfinish = () => particle.remove();
-        }
     }
 
     setupScrollAnimations() {

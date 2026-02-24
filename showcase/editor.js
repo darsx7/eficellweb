@@ -79,6 +79,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Listen for messages from preview
+    globalThis.addEventListener('message', (event) => {
+        if (event.origin !== globalThis.location.origin) return;
+        if (event.data.type === 'item-moved') {
+            const { section, index, geometry } = event.data;
+            if (content[section] && content[section].items && content[section].items[index]) {
+                content[section].items[index].geometry = geometry;
+                pushHistory(); // Optional: might be too frequent if ondrag, but okay for onmouseup
+                // We don't need to re-render sidebar or preview immediately as the DOM is already there
+                // But we should mark unsaved changes visually if we had that feature
+            }
+        }
+    });
+
     async function saveContent() {
         try {
             const res = await fetch('/api/save-content', {
@@ -507,12 +521,63 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============================================
-    // SECTION: Styles
+    // SECTION: Theme & Network (Merged)
     // ============================================
-    function renderStylesSection(section, body) {
-        body.appendChild(createColorInput('Color Primario', section.primary, (v) => { section.primary = v; }));
-        body.appendChild(createColorInput('Color Secundario', section.secondary, (v) => { section.secondary = v; }));
-        body.appendChild(createColorInput('Fondo Oscuro', section.bgDark, (v) => { section.bgDark = v; }));
+    function renderThemeSection(theme, body) {
+        // --- Colors ---
+        const colorsLabel = document.createElement('label');
+        colorsLabel.className = 'config-label';
+        colorsLabel.textContent = '🎨 Colores del Tema';
+        body.appendChild(colorsLabel);
+
+        body.appendChild(createColorInput('Primario', theme.primary, (v) => { theme.primary = v; }));
+        body.appendChild(createColorInput('Secundario', theme.secondary, (v) => { theme.secondary = v; }));
+        body.appendChild(createColorInput('Fondo', theme.bgDark, (v) => { theme.bgDark = v; }));
+
+        // --- Network ---
+        const netLabel = document.createElement('label');
+        netLabel.className = 'config-label';
+        netLabel.textContent = '🕸️ Configuración de Red';
+        body.appendChild(netLabel);
+
+        if (!theme.network) theme.network = { lineColor: theme.primary, glowColor: theme.secondary, gridDensity: 40 };
+        const net = theme.network;
+
+        body.appendChild(createColorInput('Líneas', net.lineColor, (v) => { net.lineColor = v; }));
+        body.appendChild(createColorInput('Brillo', net.glowColor, (v) => { net.glowColor = v; }));
+
+        body.appendChild(createSelect('Efecto', ['repel', 'attract', 'wave', 'glow'], net.interactionType || 'repel', (v) => {
+            net.interactionType = v;
+            updatePreview();
+        }));
+
+        body.appendChild(buildSlider('Densidad', net.gridDensity || 40, 20, 100, 5, 'px', (v) => { net.gridDensity = v; }));
+        body.appendChild(buildSlider('Radio Interacción', net.interactionRadius || 150, 50, 400, 10, 'px', (v) => { net.interactionRadius = v; }));
+
+        // --- Styles Detail ---
+        const styleLabel = document.createElement('label');
+        styleLabel.className = 'config-label';
+        styleLabel.textContent = '💅 Estilos Generales';
+        body.appendChild(styleLabel);
+
+        if (!theme.styles) theme.styles = { cards: {}, effects: {} };
+
+        // Cards
+        body.appendChild(buildSlider('Radio Tarjetas', theme.styles.cards?.borderRadius ?? 16, 0, 40, 2, 'px', (v) => {
+            if(!theme.styles.cards) theme.styles.cards = {};
+            theme.styles.cards.borderRadius = v;
+        }));
+
+        body.appendChild(buildSlider('Opacidad Tarjetas', (theme.styles.cards?.bgOpacity ?? 0.05) * 100, 0, 100, 5, '%', (v) => {
+            if(!theme.styles.cards) theme.styles.cards = {};
+            theme.styles.cards.bgOpacity = v / 100;
+        }));
+
+        // Effects
+        body.appendChild(buildSlider('Intensidad Brillo', (theme.styles.effects?.glowIntensity ?? 0.5) * 100, 0, 100, 5, '%', (v) => {
+            if(!theme.styles.effects) theme.styles.effects = {};
+            theme.styles.effects.glowIntensity = v / 100;
+        }));
     }
 
     // ============================================
@@ -717,6 +782,41 @@ document.addEventListener('DOMContentLoaded', () => {
     function buildItemCard(section, key, item, index) {
         const card = document.createElement('div');
         card.className = 'item-card';
+
+        // If in freeform mode, show geometry controls
+        if (section.config?.layout === 'freeform') {
+            const geoHeader = document.createElement('div');
+            geoHeader.className = 'geo-controls';
+            geoHeader.style.cssText = 'display:flex; gap:0.5rem; margin-bottom:0.5rem; background:var(--bg-dark); padding:0.3rem; border-radius:4px; font-size:0.7rem;';
+
+            const geo = item.geometry || { x: 0, y: 0, w: 200, h: 'auto', z: 1, r: 0 };
+
+            const createTinyInput = (label, val, prop, step=1) => {
+                const wrap = document.createElement('div');
+                wrap.style.cssText = 'flex:1; display:flex; flex-direction:column;';
+                wrap.innerHTML = `<span style="color:var(--text-dim);">${label}</span>`;
+                const inp = document.createElement('input');
+                inp.type = 'number';
+                inp.value = val;
+                inp.style.cssText = 'width:100%; background:transparent; border:none; color:var(--primary); font-weight:bold; border-bottom:1px solid var(--border);';
+                inp.onchange = (e) => {
+                    if(!item.geometry) item.geometry = { ...geo };
+                    item.geometry[prop] = parseFloat(e.target.value);
+                    if(prop === 'h' && isNaN(item.geometry[prop])) item.geometry[prop] = 'auto';
+                    updatePreview();
+                };
+                wrap.appendChild(inp);
+                return wrap;
+            };
+
+            geoHeader.appendChild(createTinyInput('X', geo.x, 'x'));
+            geoHeader.appendChild(createTinyInput('Y', geo.y, 'y'));
+            geoHeader.appendChild(createTinyInput('W', geo.w, 'w'));
+            geoHeader.appendChild(createTinyInput('R°', geo.r || 0, 'r'));
+            geoHeader.appendChild(createTinyInput('Z', geo.z, 'z'));
+
+            card.appendChild(geoHeader);
+        }
 
         // Header with number and controls
         const header = document.createElement('div');
@@ -941,12 +1041,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const AVAILABLE_TRIGGERS = ['hover', 'click', 'dblclick'];
     const TRIGGER_LABELS = { hover: '🖱 Hover', click: '👆 Click', dblclick: '👆👆 DblClick' };
-    const AVAILABLE_ACTIONS = ['scale', 'lift', 'glow', 'pulse', 'border-flow', 'blur-others', 'dim', 'slide-info', 'expand', 'shake', 'flip'];
+    const AVAILABLE_ACTIONS = ['scale', 'lift', 'glow', 'pulse', 'border-flow', 'blur-others', 'dim', 'slide-info', 'expand', 'shake', 'flip', 'rotate', 'skew', 'blur'];
     const ACTION_LABELS = {
         'scale': '📐 Escalar', 'lift': '⬆️ Elevar', 'glow': '✨ Brillo',
         'pulse': '💓 Pulso', 'border-flow': '🌊 Borde Fluido', 'blur-others': '🌫 Difuminar Otros',
         'dim': '🌑 Oscurecer Otros', 'slide-info': '📜 Deslizar Info',
-        'expand': '🔲 Expandir', 'shake': '📳 Vibrar', 'flip': '🔄 Voltear'
+        'expand': '🔲 Expandir', 'shake': '📳 Vibrar', 'flip': '🔄 Voltear',
+        'rotate': '🔄 Rotar', 'skew': '📐 Inclinar', 'blur': '🌫 Desenfoque'
     };
     const ENTRANCE_OPTIONS = ['none', 'fade-up', 'fade-down', 'scale-in', 'slide-left', 'slide-right', 'flip-in'];
 
@@ -1306,12 +1407,12 @@ document.addEventListener('DOMContentLoaded', () => {
             renderBrandingSection(content.branding, body);
         }));
 
-        // 3. Styles
-        if (!content.styles) {
-            content.styles = { primary: '#f59e0b', secondary: '#fbbf24', bgDark: '#1e1e2e' };
+        // 3. Theme & Network (Replaces Styles)
+        if (!content.theme) {
+            content.theme = { primary: '#f59e0b', secondary: '#fbbf24', bgDark: '#1e1e2e' };
         }
-        sectionsList.appendChild(createSectionEl('styles', 'Estilos', (body) => {
-            renderStylesSection(content.styles, body);
+        sectionsList.appendChild(createSectionEl('styles', 'Tema y Red', (body) => {
+            renderThemeSection(content.theme, body);
         }));
 
         // 4. Nav
