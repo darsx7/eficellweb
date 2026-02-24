@@ -396,13 +396,97 @@ class Showcase {
             if (event.data.type === 'update-content') {
                 this.updateContent(event.data.content);
             } else if (event.data.type === 'change-template') {
-                // Aquí el editor nos manda un template key, actualizamos el contenido (que ya debería venir con theme nuevo si el editor lo gestiona)
-                // O si el editor solo manda la key, cargamos los valores de TEMPLATES y actualizamos nosotros.
-                // En este refactor, asumimos que el editor inyecta los valores en content.theme y nos manda update-content.
-                // Si seguimos soportando "change-template", simplemente aplicamos el preset al objeto content.
                 this.applyTemplatePreset(event.data.template);
+            } else if (event.data.type === 'enable-edit-mode') {
+                this.enableEditMode(event.data.enabled);
             }
         });
+    }
+
+    enableEditMode(enabled) {
+        document.body.classList.toggle('edit-mode', enabled);
+        if (enabled) {
+            this.setupDraggableItems();
+        } else {
+            // Cleanup draggables if needed (e.g. remove listeners, though they are usually safe to leave if gated by class or context)
+        }
+    }
+
+    setupDraggableItems() {
+        const items = document.querySelectorAll('.freeform-item');
+        let draggedItem = null;
+        let startX, startY, initialLeft, initialTop;
+
+        items.forEach(item => {
+            // Prevent default drag
+            item.ondragstart = () => false;
+
+            item.onmousedown = (e) => {
+                // Ignore inputs/buttons
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+
+                e.preventDefault();
+                draggedItem = item;
+                startX = e.clientX;
+                startY = e.clientY;
+                initialLeft = item.offsetLeft;
+                initialTop = item.offsetTop;
+
+                item.classList.add('dragging');
+                item.style.cursor = 'grabbing';
+            };
+        });
+
+        document.onmousemove = (e) => {
+            if (!draggedItem) return;
+            e.preventDefault();
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+
+            const newLeft = initialLeft + dx;
+            const newTop = initialTop + dy;
+
+            draggedItem.style.left = `${newLeft}px`;
+            draggedItem.style.top = `${newTop}px`;
+        };
+
+        document.onmouseup = () => {
+            if (draggedItem) {
+                draggedItem.classList.remove('dragging');
+                draggedItem.style.cursor = '';
+
+                // Notify editor of new position
+                const section = draggedItem.closest('section');
+                const sectionId = section?.id; // 'servicios', 'beneficios'
+                // We need to map section ID to content key
+                let sectionKey = '';
+                if(sectionId === 'servicios') sectionKey = 'services';
+                else if(sectionId === 'beneficios') sectionKey = 'benefits';
+                else if(sectionId === 'equipo') sectionKey = 'team';
+
+                const index = draggedItem.dataset.index;
+
+                if (sectionKey && index !== undefined) {
+                    const geometry = {
+                        x: draggedItem.offsetLeft,
+                        y: draggedItem.offsetTop,
+                        w: draggedItem.offsetWidth,
+                        h: draggedItem.offsetHeight, // height might be 'auto' in render, but offsetHeight is px
+                        z: getComputedStyle(draggedItem).zIndex || 1
+                    };
+
+                    // Send message to parent (editor)
+                    window.parent.postMessage({
+                        type: 'item-moved',
+                        section: sectionKey,
+                        index: parseInt(index),
+                        geometry: geometry
+                    }, globalThis.location.origin);
+                }
+
+                draggedItem = null;
+            }
+        };
     }
 
     applyTemplatePreset(templateName) {
