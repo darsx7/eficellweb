@@ -436,17 +436,10 @@ class Showcase {
                 const target = e.touches[0].target;
                 const section = target.closest('section');
 
-                // Identify if we are in orbit mode
-                if (section && section.querySelector('[data-layout="orbit"]')) {
-                     const sectionId = section.id;
-                     let key = '';
-                     if(sectionId === 'servicios') key = 'services';
-                     else if(sectionId === 'beneficios') key = 'benefits';
-                     else if(sectionId === 'equipo') key = 'team';
-
-                     if (this.content[key]?.config?.orbitOptions) {
-                         initialRadius = this.content[key].config.orbitOptions.radius || 400;
-                     }
+                // Identify if we are in freeform/group mode
+                if (section && section.querySelector('[data-layout="freeform"]')) {
+                     // For now, pinch could scale the group?
+                     // Let's implement group scale logic later or map to radius if using circular pattern
                 }
             }
         }, { passive: false });
@@ -455,33 +448,15 @@ class Showcase {
             if (e.touches.length === 2 && initialPinchDistance) {
                 const dx = e.touches[0].clientX - e.touches[1].clientX;
                 const dy = e.touches[0].clientY - e.touches[1].clientY;
-                const currentDistance = Math.sqrt(dx * dx + dy * dy);
+                // const currentDistance = Math.sqrt(dx * dx + dy * dy);
 
-                const scale = currentDistance / initialPinchDistance;
+                // const scale = currentDistance / initialPinchDistance;
 
                 const target = e.touches[0].target;
                 const section = target.closest('section');
 
-                if (section && section.querySelector('[data-layout="orbit"]')) {
-                    e.preventDefault(); // Prevent page zoom
-
-                    const sectionId = section.id;
-                    let key = '';
-                    if(sectionId === 'servicios') key = 'services';
-                    else if(sectionId === 'beneficios') key = 'benefits';
-                    else if(sectionId === 'equipo') key = 'team';
-
-                    if (this.content[key]?.config?.orbitOptions) {
-                        const newRadius = initialRadius * scale;
-                        const clampedRadius = Math.max(100, Math.min(1000, newRadius));
-
-                        this.content[key].config.orbitOptions.radius = clampedRadius;
-
-                        // Force Update
-                        if (this.orbitInstances && this.orbitInstances[sectionId]) {
-                            this.orbitInstances[sectionId].update();
-                        }
-                    }
+                if (section && section.querySelector('[data-layout="freeform"]')) {
+                    // Placeholder for future group scaling
                 }
             }
         }, { passive: false });
@@ -1370,17 +1345,40 @@ class Showcase {
                     </div>`;
                 break;
 
+            // 'orbit' is now a behavior applied to freeform, but keeping case for legacy support/migration if needed.
+            // We will redirect to freeform with specific class for now, or just use freeform structure.
             case 'orbit':
+            case 'freeform':
+                // Container Transform logic (Group Motion)
+                let containerStyle = 'position: relative; min-height: 600px; transform-style: preserve-3d;';
+                if (services.config?.groupMotion) {
+                     // Motion is applied in JS, but initial state might be needed here?
+                     // Actually, let's keep it clean.
+                }
+
                 contentHtml = `
-                    <div class="orbit-container ${classes}" data-layout="orbit" style="position: relative; min-height: 600px; overflow: hidden;">
-                        <div class="orbit-ring" style="position: absolute; top: 50%; left: 50%; transform-style: preserve-3d;">
-                            ${services.items.map((item, i) => `
-                                <div class="orbit-item service-card" data-index="${i}">
+                    <div class="services-freeform ${classes}" data-layout="freeform" style="${containerStyle}">
+                        <div class="freeform-container" style="position: absolute; top: 50%; left: 50%; width: 0; height: 0; transform-style: preserve-3d;">
+                        ${services.items.map((item, i) => {
+                            const geo = item.geometry || { x: 0, y: 0, w: 300, h: 'auto', z: 1, r: 0 };
+                            const style = `
+                                position: absolute;
+                                left: ${geo.x}px;
+                                top: ${geo.y}px;
+                                width: ${geo.w}px;
+                                height: ${geo.h === 'auto' ? 'auto' : geo.h + 'px'};
+                                z-index: ${geo.z || 1};
+                                transform: translate(-50%, -50%) rotate(${geo.r || 0}deg) scale(${geo.s || 1});
+                            `;
+                            // Note: translate(-50%, -50%) centers the item on its X/Y coordinate
+                            return `
+                                <div class="service-card freeform-item" data-index="${i}" style="${style}">
                                     <span class="card-icon">${item.icon}</span>
                                     <h3>${item.title}</h3>
                                     <p>${item.description}</p>
                                 </div>
-                            `).join('')}
+                            `;
+                        }).join('')}
                         </div>
                     </div>`;
                 break;
@@ -2326,7 +2324,9 @@ class Showcase {
     }
 
     initOrbitLayouts() {
-        // Cleanup old instances if they reference removed elements
+        // Renamed to initGroupMotion but keeping name for compatibility with plan
+        // This handles "Group Motion" for freeform containers
+
         if (this.orbitInstances) {
             Object.keys(this.orbitInstances).forEach(key => {
                 if (!document.body.contains(this.orbitInstances[key].element)) {
@@ -2338,7 +2338,8 @@ class Showcase {
             this.orbitInstances = {};
         }
 
-        document.querySelectorAll('[data-layout="orbit"]').forEach(container => {
+        // Target .services-freeform (which now contains the group container)
+        document.querySelectorAll('[data-layout="freeform"]').forEach(container => {
             const section = container.closest('section');
             const sectionId = section.id;
             let sectionKey = '';
@@ -2348,80 +2349,109 @@ class Showcase {
 
             if (this.orbitInstances[sectionId]) return;
 
-            const ring = container.querySelector('.orbit-ring');
-            if (!ring) return;
+            const group = container.querySelector('.freeform-container');
+            if (!group) return;
 
             // State
             let currentRotation = 0;
+            let currentScale = 1;
             let targetRotation = 0;
             let animationFrameId;
             let scrollListener;
+            let mouseEnterListener, mouseLeaveListener;
+            let isPaused = false;
 
             const update = () => {
-                const config = this.content[sectionKey]?.config?.orbitOptions || { radius: 400, perspective: 1000, tiltX: 0, tiltY: 0, speed: 1 };
-                container.style.perspective = `${config.perspective}px`;
+                // Get config from "groupMotion" in content
+                const motion = this.content[sectionKey]?.config?.groupMotion || { type: 'static', speed: 0, tiltX: 0, tiltY: 0 };
+                const tiltX = motion.tiltX || 0;
+                const tiltY = motion.tiltY || 0;
+                const persp = motion.perspective || 1000;
 
-                const items = ring.querySelectorAll('.orbit-item');
-                const count = items.length;
-                const angleStep = 360 / count;
-                const tiltX = config.tiltX || 0;
-                const tiltY = config.tiltY || 0;
+                container.style.perspective = `${persp}px`;
 
-                ring.style.transform = `translate3d(-50%, -50%, 0) rotateX(${tiltX}deg) rotateY(${tiltY}deg) rotateZ(${currentRotation}deg)`;
+                // Group Transform
+                let transform = `translate3d(-50%, -50%, 0) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
 
-                items.forEach((item, i) => {
-                    // Skip if being interacted with physically
-                    if (item.classList.contains('dragging') || item.dataset.animId) return;
+                if (motion.type === 'rotate' || motion.type === 'orbit') {
+                    transform += ` rotateZ(${currentRotation}deg)`;
+                }
 
-                    const angle = i * angleStep;
-                    item.style.position = 'absolute';
-                    item.style.left = '0';
-                    item.style.top = '0';
-                    item.style.width = '300px';
-                    item.style.height = 'auto';
-                    // Counter-rotate item so it stays upright
-                    item.style.transform = `rotate(${angle}deg) translate(${config.radius}px) rotate(-${angle + currentRotation}deg)`;
-                });
+                group.style.transform = transform;
+
+                // Counter-rotation logic if desired (e.g. keep items upright)
+                // In freeform, items have their own rotation in geometry.r
+                // If we want them to stay upright while group rotates, we need to subtract currentRotation
+                if (motion.counterRotate) {
+                    group.querySelectorAll('.freeform-item').forEach(item => {
+                         // We need to preserve item's own rotation (geo.r)
+                         // But we can't easily access geo.r from DOM style without parsing.
+                         // Optimization: Apply a counter-rot wrapper?
+                         // For now, simpler: just rotate.
+                    });
+                }
             };
 
-            // Scroll Logic
+            // Loop Logic
+            const loop = () => {
+                if (this.isEditMode) return;
+
+                const motion = this.content[sectionKey]?.config?.groupMotion || {};
+
+                if (motion.type === 'rotate') {
+                    if (!isPaused) {
+                        currentRotation += (motion.speed || 0.5);
+                    }
+                } else if (motion.type === 'scroll-rotate') {
+                    // Scroll logic handled in scroll listener, but we lerp here
+                    const diff = targetRotation - currentRotation;
+                    currentRotation += diff * 0.1;
+                }
+
+                update();
+                animationFrameId = requestAnimationFrame(loop);
+            };
+
+            // Scroll Listener
             let lastScrollY = window.scrollY;
             scrollListener = () => {
                 if (this.isEditMode) return;
-                const rect = container.getBoundingClientRect();
-                if (rect.top < window.innerHeight && rect.bottom > 0) {
-                     const interact = this.content[sectionKey]?.config?.interactions || { scrollMap: 'rotate' };
-                     if (interact.scrollMap === 'rotate') {
-                        const config = this.content[sectionKey]?.config?.orbitOptions || { speed: 1 };
+                const motion = this.content[sectionKey]?.config?.groupMotion || {};
+
+                if (motion.type === 'scroll-rotate') {
+                    const rect = container.getBoundingClientRect();
+                    if (rect.top < window.innerHeight && rect.bottom > 0) {
                         const delta = window.scrollY - lastScrollY;
-                        targetRotation += delta * (config.speed || 0.5);
-                     }
+                        targetRotation += delta * (motion.speed || 0.5);
+                    }
                 }
                 lastScrollY = window.scrollY;
             };
-            window.addEventListener('scroll', scrollListener);
 
-            // Animation Loop
-            const loop = () => {
-                const diff = targetRotation - currentRotation;
-                if (Math.abs(diff) > 0.1 || Math.abs(currentRotation % 360) > 0.1) {
-                    currentRotation += diff * 0.1;
-                    update(); // Pass currentRotation via closure
-                }
-                animationFrameId = requestAnimationFrame(loop);
+            // Hover Listeners (Pause)
+            mouseEnterListener = () => {
+                const motion = this.content[sectionKey]?.config?.groupMotion || {};
+                if (motion.pauseOnHover !== false) isPaused = true;
             };
+            mouseLeaveListener = () => { isPaused = false; };
+
+            window.addEventListener('scroll', scrollListener);
+            container.addEventListener('mouseenter', mouseEnterListener);
+            container.addEventListener('mouseleave', mouseLeaveListener);
+
             loop();
 
             this.orbitInstances[sectionId] = {
                 element: container,
-                update: update,
+                update: update, // expose update for editor
                 destroy: () => {
                     window.removeEventListener('scroll', scrollListener);
+                    container.removeEventListener('mouseenter', mouseEnterListener);
+                    container.removeEventListener('mouseleave', mouseLeaveListener);
                     cancelAnimationFrame(animationFrameId);
                 }
             };
 
-            // Initial call
             update();
         });
     }

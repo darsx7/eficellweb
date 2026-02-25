@@ -150,10 +150,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const { section, index, geometry } = event.data;
             if (content[section] && content[section].items && content[section].items[index]) {
                 content[section].items[index].geometry = geometry;
-                pushHistory(); // Optional: might be too frequent if ondrag, but okay for onmouseup
-                // We don't need to re-render sidebar or preview immediately as the DOM is already there
-                // But we should mark unsaved changes visually if we had that feature
+                pushHistory();
             }
+        } else if (event.data.type === 'config-updated') {
+             const { section, configKey, config } = event.data;
+             if (content[section] && content[section].config) {
+                 content[section].config[configKey] = config;
+                 pushHistory();
+                 // Re-render only if this section is active to show new slider value
+                 const activeSection = document.querySelector(`.section-item.active[data-key="${section}"]`);
+                 if (activeSection) {
+                     renderSidebar(); // Heavy but ensures UI sync
+                 }
+             }
         }
     });
 
@@ -1572,65 +1581,160 @@ document.addEventListener('DOMContentLoaded', () => {
             configRow.appendChild(carouselDiv);
         }
 
-        // --- Orbit / Physics Interaction Config ---
-        if (section.config?.layout === 'orbit') {
-            const interactDiv = document.createElement('div');
-            interactDiv.className = 'interact-config';
-            interactDiv.style.cssText = 'margin-top: 1rem; padding: 0.5rem; background: rgba(50,255,100,0.05); border: 1px solid var(--border); border-radius: 8px;';
-            interactDiv.innerHTML = '<label class="config-label">🪐 Física Orbital</label>';
+        // --- Freeform / Smart Arrange Config ---
+        if (section.config?.layout === 'freeform' || section.config?.layout === 'orbit') {
+            const arrangeDiv = document.createElement('div');
+            arrangeDiv.className = 'arrange-config';
+            arrangeDiv.style.cssText = 'margin-top: 1rem; padding: 0.5rem; background: rgba(50,150,255,0.05); border: 1px solid var(--border); border-radius: 8px;';
+            arrangeDiv.innerHTML = '<label class="config-label">📍 Distribución Inteligente</label>';
 
-            if (!section.config.orbitOptions) {
-                section.config.orbitOptions = { radius: 400, perspective: 1000, tiltX: 10, tiltY: 0, speed: 1 };
+            const btnGrid = document.createElement('div');
+            btnGrid.style.cssText = 'display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:10px;';
+
+            const addArrangeBtn = (label, fn) => {
+                const btn = document.createElement('button');
+                btn.textContent = label;
+                btn.className = 'btn-small';
+                btn.style.cssText = 'background:var(--surface); border:1px solid var(--border); padding:5px; cursor:pointer;';
+                btn.onclick = () => {
+                    if(confirm('Esto reorganizará todos los elementos. ¿Continuar?')) {
+                        fn();
+                        pushHistory();
+                        updatePreview();
+                        // Force re-render of item list to show updated coords
+                        renderSidebar();
+                    }
+                };
+                btnGrid.appendChild(btn);
+            };
+
+            addArrangeBtn('⭕ Circular', () => {
+                const count = section.items.length;
+                const radius = 300;
+                section.items.forEach((item, i) => {
+                    const angle = (i / count) * 360;
+                    // Calculate x,y based on angle.
+                    // Note: showcase.js centers items at 0,0 then translates.
+                    // But here we want to set absolute positions relative to center or container?
+                    // In freeform, translate(-50%, -50%) centers on X/Y.
+                    // So if we set X=0, Y=0, item is at center.
+                    // We want to distribute around 0,0 (center of container).
+                    // Wait, `freeform-container` is at 50% 50%.
+                    // So coordinates (0,0) is center.
+
+                    const rad = angle * (Math.PI / 180);
+                    item.geometry = {
+                        x: Math.round(Math.cos(rad) * radius),
+                        y: Math.round(Math.sin(rad) * radius),
+                        w: 300,
+                        h: 'auto',
+                        z: 1,
+                        r: angle + 90, // Face outward
+                        s: 1
+                    };
+                });
+            });
+
+            addArrangeBtn('📏 Lineal H', () => {
+                const count = section.items.length;
+                const spacing = 320;
+                const totalW = (count - 1) * spacing;
+                const startX = -totalW / 2;
+                section.items.forEach((item, i) => {
+                    item.geometry = {
+                        x: startX + (i * spacing),
+                        y: 0,
+                        w: 300,
+                        h: 'auto',
+                        z: 1,
+                        r: 0, s: 1
+                    };
+                });
+            });
+
+            addArrangeBtn('🎲 Aleatorio', () => {
+                section.items.forEach(item => {
+                    item.geometry = {
+                        x: Math.round((Math.random() - 0.5) * 800),
+                        y: Math.round((Math.random() - 0.5) * 600),
+                        w: 300,
+                        h: 'auto',
+                        z: Math.floor(Math.random() * 5),
+                        r: Math.round((Math.random() - 0.5) * 40),
+                        s: 0.8 + Math.random() * 0.4
+                    };
+                });
+            });
+
+            addArrangeBtn('📐 Arco', () => {
+                const count = section.items.length;
+                const radius = 400;
+                const arc = 120; // degrees
+                const startAngle = -90 - (arc/2);
+                section.items.forEach((item, i) => {
+                    const angle = startAngle + (i / (count - 1 || 1)) * arc;
+                    const rad = angle * (Math.PI / 180);
+                    item.geometry = {
+                        x: Math.round(Math.cos(rad) * radius),
+                        y: Math.round(Math.sin(rad) * radius) + 200,
+                        w: 300,
+                        h: 'auto',
+                        z: 1,
+                        r: angle + 90,
+                        s: 1
+                    };
+                });
+            });
+
+            arrangeDiv.appendChild(btnGrid);
+            configRow.appendChild(arrangeDiv);
+
+            // --- Group Motion Config ---
+            const motionDiv = document.createElement('div');
+            motionDiv.className = 'group-motion-config';
+            motionDiv.style.cssText = 'margin-top: 1rem; padding: 0.5rem; background: rgba(150,50,255,0.05); border: 1px solid var(--border); border-radius: 8px;';
+            motionDiv.innerHTML = '<label class="config-label">🎭 Comportamiento del Grupo</label>';
+
+            if (!section.config.groupMotion) {
+                section.config.groupMotion = { type: 'static', speed: 0.5, tiltX: 0, tiltY: 0, perspective: 1000 };
             }
-            const oo = section.config.orbitOptions;
+            const gm = section.config.groupMotion;
 
-            // Orbit Params
-            interactDiv.appendChild(buildSlider('Radio (px)', oo.radius || 400, 200, 1000, 50, 'px', (v) => { oo.radius = v; }));
-            interactDiv.appendChild(buildSlider('Perspectiva', oo.perspective || 1000, 500, 2000, 100, 'px', (v) => { oo.perspective = v; }));
-            interactDiv.appendChild(buildSlider('Inclinación X', oo.tiltX || 0, -90, 90, 5, '°', (v) => { oo.tiltX = v; }));
-            interactDiv.appendChild(buildSlider('Inclinación Y', oo.tiltY || 0, -90, 90, 5, '°', (v) => { oo.tiltY = v; }));
-            interactDiv.appendChild(buildSlider('Velocidad Base', oo.speed || 1, 0, 5, 0.1, 'x', (v) => { oo.speed = v; }));
-
-            // Interactions Map
-            if (!section.config.interactions) {
-                section.config.interactions = { scrollMap: 'rotate', dragPhysics: true, networkLink: true };
-            }
-            const int = section.config.interactions;
-
-            const intLabel = document.createElement('label');
-            intLabel.className = 'config-label';
-            intLabel.style.fontSize = '0.75rem';
-            intLabel.style.marginTop = '0.5rem';
-            intLabel.textContent = '🕹️ Gestos';
-            interactDiv.appendChild(intLabel);
-
-            interactDiv.appendChild(createSelect('Scroll Mapeo', ['none', 'rotate', 'zoom', 'tilt'], int.scrollMap || 'rotate', (val) => {
-                int.scrollMap = val;
+            motionDiv.appendChild(createSelect('Tipo Movimiento', ['static', 'rotate', 'scroll-rotate'], gm.type || 'static', (val) => {
+                gm.type = val;
                 updatePreview();
             }));
 
-            // Checkboxes
-            const physLabel = document.createElement('label');
-            physLabel.className = 'action-checkbox';
-            const physCb = document.createElement('input');
-            physCb.type = 'checkbox';
-            physCb.checked = int.dragPhysics !== false;
-            physCb.onchange = () => { int.dragPhysics = physCb.checked; updatePreview(); };
-            physLabel.appendChild(physCb);
-            physLabel.appendChild(document.createTextNode(' Lanzar con Inercia (Throw)'));
-            interactDiv.appendChild(physLabel);
+            motionDiv.appendChild(buildSlider('Velocidad', gm.speed || 0.5, -5, 5, 0.1, 'x', (v) => { gm.speed = v; }));
 
-            const netLabel = document.createElement('label');
-            netLabel.className = 'action-checkbox';
-            const netCb = document.createElement('input');
-            netCb.type = 'checkbox';
-            netCb.checked = int.networkLink !== false;
-            netCb.onchange = () => { int.networkLink = netCb.checked; updatePreview(); };
-            netLabel.appendChild(netCb);
-            netLabel.appendChild(document.createTextNode(' Vincular a Red de Fondo'));
-            interactDiv.appendChild(netLabel);
+            motionDiv.appendChild(buildSlider('Perspectiva 3D', gm.perspective || 1000, 500, 2000, 100, 'px', (v) => { gm.perspective = v; }));
 
-            configRow.appendChild(interactDiv);
+            motionDiv.appendChild(buildSlider('Inclinación Global X', gm.tiltX || 0, -90, 90, 5, '°', (v) => { gm.tiltX = v; }));
+            motionDiv.appendChild(buildSlider('Inclinación Global Y', gm.tiltY || 0, -90, 90, 5, '°', (v) => { gm.tiltY = v; }));
+
+            // Interaction checkboxes
+            const pauseLabel = document.createElement('label');
+            pauseLabel.className = 'action-checkbox';
+            const pauseCb = document.createElement('input');
+            pauseCb.type = 'checkbox';
+            // Default to true if undefined
+            pauseCb.checked = gm.pauseOnHover !== false;
+            pauseCb.onchange = () => { gm.pauseOnHover = pauseCb.checked; updatePreview(); };
+            pauseLabel.appendChild(pauseCb);
+            pauseLabel.appendChild(document.createTextNode(' Pausar al pasar el mouse'));
+            motionDiv.appendChild(pauseLabel);
+
+            const cRotateLabel = document.createElement('label');
+            cRotateLabel.className = 'action-checkbox';
+            const cRotateCb = document.createElement('input');
+            cRotateCb.type = 'checkbox';
+            cRotateCb.checked = gm.counterRotate || false;
+            cRotateCb.onchange = () => { gm.counterRotate = cRotateCb.checked; updatePreview(); };
+            cRotateLabel.appendChild(cRotateCb);
+            cRotateLabel.appendChild(document.createTextNode(' Contra-rotar Ítems (Mantener Vertical)'));
+            // motionDiv.appendChild(cRotateLabel);
+
+            configRow.appendChild(motionDiv);
         }
 
         // --- Expanded Card Customization ---
