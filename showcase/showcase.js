@@ -406,6 +406,8 @@ class Showcase {
                 this.applyTemplatePreset(event.data.template);
             } else if (event.data.type === 'enable-edit-mode') {
                 this.enableEditMode(event.data.enabled);
+            } else if (event.data.type === 'set-animation-time') {
+                this.scrubAnimation(event.data.percent);
             }
         });
     }
@@ -413,13 +415,28 @@ class Showcase {
     enableEditMode(enabled) {
         this.isEditMode = enabled;
         document.body.classList.toggle('edit-mode', enabled);
+        document.body.classList.toggle('static-edit-mode', enabled);
+
         if (enabled) {
-            // Disable animations
-            document.body.classList.add('no-animations');
             this.setupDraggableItems();
+            // Inject static styles if not present
+            if (!document.getElementById('static-edit-styles')) {
+                const style = document.createElement('style');
+                style.id = 'static-edit-styles';
+                style.textContent = `
+                    body.static-edit-mode * {
+                        transition: none !important;
+                        animation: none !important;
+                    }
+                    body.static-edit-mode .particle { display: none; }
+                `;
+                document.head.appendChild(style);
+            }
         } else {
-            document.body.classList.remove('no-animations');
-            // Re-enable interactions if needed
+            // Restart loops if needed
+            this.animateNetwork();
+            // Re-trigger layout inits to restart loops
+            this.initOrbitLayouts();
         }
     }
 
@@ -1783,8 +1800,30 @@ class Showcase {
         });
     }
 
+    scrubAnimation(percent) {
+        if (!this.isEditMode) return;
+        const p = parseFloat(percent);
+
+        // 1. Scrub Network (0 to 100 simulates 0 to 10 seconds approx)
+        this.time = p / 10;
+        this.drawNetworkFrame();
+
+        // 2. Scrub Group Motion (0-100% -> 0-360deg)
+        if (this.orbitInstances) {
+            Object.values(this.orbitInstances).forEach(inst => {
+                if(inst.setRotation) inst.setRotation(p * 3.6); // 0-360
+            });
+        }
+    }
+
     animateNetwork() {
+        if (this.isEditMode) return;
         this.time += 0.01;
+        this.drawNetworkFrame();
+        requestAnimationFrame(() => this.animateNetwork());
+    }
+
+    drawNetworkFrame() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         const netConfig = this.content?.theme?.network || TEMPLATES.solar.theme.network;
@@ -1904,8 +1943,6 @@ class Showcase {
             this.ctx.fillStyle = netConfig.lineColor || '#ffffff';
             this.ctx.fill();
         });
-
-        requestAnimationFrame(() => this.animateNetwork());
     }
 
     drawLine(node1, node2, netConfig, baseOpacity = 0.5) {
@@ -2394,7 +2431,12 @@ class Showcase {
 
             // Loop Logic
             const loop = () => {
-                if (this.isEditMode) return;
+                // In edit mode, we stop the loop BUT we might want to render a specific frame (scrubbing)
+                // If isEditMode is true, we exit the loop, but `update()` is still available for manual calls.
+                if (this.isEditMode) {
+                    cancelAnimationFrame(animationFrameId);
+                    return;
+                }
 
                 const motion = this.content[sectionKey]?.config?.groupMotion || {};
 
@@ -2444,6 +2486,10 @@ class Showcase {
             this.orbitInstances[sectionId] = {
                 element: container,
                 update: update, // expose update for editor
+                setRotation: (deg) => {
+                    currentRotation = deg;
+                    update();
+                },
                 destroy: () => {
                     window.removeEventListener('scroll', scrollListener);
                     container.removeEventListener('mouseenter', mouseEnterListener);

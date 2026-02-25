@@ -10,15 +10,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let historyIndex = -1;
     let isEditMode = false;
 
-    // --- Create Toggle Button in Header ---
+    // --- Create Toggle Button & Timeline in Header ---
     const headerEl = document.querySelector('header');
     if (headerEl) {
+        const controlsContainer = document.createElement('div');
+        controlsContainer.style.cssText = 'display:flex; align-items:center; gap:10px; margin-left:1rem;';
+
         const toggleBtn = document.createElement('button');
         toggleBtn.id = 'toggleEditMode';
         toggleBtn.className = 'btn-toggle-edit';
         toggleBtn.textContent = '👁️ Vista Previa';
         toggleBtn.style.cssText = `
-            margin-left: 1rem;
             padding: 0.5rem 1rem;
             background: #334155;
             border: 1px solid #475569;
@@ -27,11 +29,36 @@ document.addEventListener('DOMContentLoaded', () => {
             cursor: pointer;
             font-weight: 500;
         `;
+
+        // Timeline Scrub
+        const timelineDiv = document.createElement('div');
+        timelineDiv.id = 'timelineControls';
+        timelineDiv.style.cssText = 'display:none; align-items:center; gap:5px; background:#1e293b; padding:5px 10px; border-radius:20px; border:1px solid #475569;';
+        timelineDiv.innerHTML = '<span style="font-size:0.8rem; color:#94a3b8;">⏱️ Timeline</span>';
+
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.min = '0';
+        slider.max = '100';
+        slider.value = '0';
+        slider.style.width = '150px';
+        slider.oninput = (e) => {
+            if (previewFrame.contentWindow) {
+                previewFrame.contentWindow.postMessage({
+                    type: 'set-animation-time',
+                    percent: e.target.value
+                }, globalThis.location.origin);
+            }
+        };
+        timelineDiv.appendChild(slider);
+
         toggleBtn.onclick = () => {
             isEditMode = !isEditMode;
             toggleBtn.textContent = isEditMode ? '✏️ Editando' : '👁️ Vista Previa';
             toggleBtn.style.background = isEditMode ? '#f59e0b' : '#334155';
             toggleBtn.style.color = isEditMode ? '#000' : '#fff';
+
+            timelineDiv.style.display = isEditMode ? 'flex' : 'none';
 
             // Send message to showcase
             if (previewFrame.contentWindow) {
@@ -41,8 +68,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, globalThis.location.origin);
             }
         };
+
+        controlsContainer.appendChild(toggleBtn);
+        controlsContainer.appendChild(timelineDiv);
         // Insert before save button
-        headerEl.insertBefore(toggleBtn, saveBtn);
+        headerEl.insertBefore(controlsContainer, saveBtn);
     }
 
     // ============================================
